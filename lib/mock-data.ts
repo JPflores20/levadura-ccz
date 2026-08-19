@@ -209,3 +209,84 @@ export const limits = {
   usl: 99,
   lsl: 90,
 }
+
+// ---------------------------------------------------------------------------
+// Cinética de Fermentación (Monitoreo)
+// ---------------------------------------------------------------------------
+
+export type KineticPoint = {
+  hora: string
+  h: number
+  plato: number // °P extracto aparente
+  ph: number
+  temp: number // °C
+}
+
+// Serie de fermentación de 0h a 168h (7 días), muestreada cada 6h
+function generateKinetics(): KineticPoint[] {
+  const points: KineticPoint[] = []
+  const total = 29 // 0..168h cada 6h
+  for (let i = 0; i < total; i++) {
+    const h = i * 6
+    const t = i / (total - 1)
+    // °P: curva de atenuación exponencial de ~12.6 -> ~2.6
+    const plato = 2.6 + 10 * Math.exp(-t * 3.4) + (Math.random() - 0.5) * 0.18
+    // pH: desciende de 5.3 a ~4.1 y se estabiliza
+    const ph = 4.1 + 1.2 * Math.exp(-t * 2.6) + (Math.random() - 0.5) * 0.04
+    // Temp: rampa de fermentación 12 -> 20°C con descanso diacetilo, luego crash a 4°C
+    let temp: number
+    if (t < 0.55) temp = 12 + (t / 0.55) * 8
+    else if (t < 0.75) temp = 20
+    else temp = 20 - ((t - 0.75) / 0.25) * 16
+    temp += (Math.random() - 0.5) * 0.4
+
+    points.push({
+      hora: `${h}h`,
+      h,
+      plato: Number(plato.toFixed(2)),
+      ph: Number(ph.toFixed(2)),
+      temp: Number(temp.toFixed(1)),
+    })
+  }
+  return points
+}
+
+export const kineticsData = generateKinetics()
+
+const kFirst = kineticsData[0]
+const kLast = kineticsData[kineticsData.length - 1]
+
+// Atenuación aparente (%) y otros derivados
+const atenuacion = ((kFirst.plato - kLast.plato) / kFirst.plato) * 100
+const alcohol = (kFirst.plato - kLast.plato) * 0.516 // aprox. ABV
+const velocidad =
+  (kFirst.plato - kLast.plato) / (kLast.h / 24) // °P por día
+
+export type MiniKpi = {
+  id: string
+  label: string
+  value: string
+  unit: string
+  icon: string
+  delta: string
+  trend: "up" | "down" | "flat"
+  status: "ok" | "marginal" | "alert"
+}
+
+export const kineticsKpis: MiniKpi[] = [
+  { id: "og", label: "Densidad Inicial", value: kFirst.plato.toFixed(1), unit: "°P", icon: "Gauge", delta: "OG", trend: "flat", status: "ok" },
+  { id: "ap", label: "Extracto Aparente", value: kLast.plato.toFixed(2), unit: "°P", icon: "Activity", delta: "-0.12 °P/6h", trend: "down", status: "ok" },
+  { id: "aten", label: "Atenuación Ap.", value: atenuacion.toFixed(1), unit: "%", icon: "Percent", delta: "objetivo 80%", trend: "up", status: atenuacion >= 78 ? "ok" : "marginal" },
+  { id: "abv", label: "Alcohol Est.", value: alcohol.toFixed(2), unit: "% v/v", icon: "FlaskConical", delta: "+0.06 /6h", trend: "up", status: "ok" },
+  { id: "ph", label: "pH Actual", value: kLast.ph.toFixed(2), unit: "", icon: "Droplets", delta: "estable", trend: "flat", status: kLast.ph >= 4.0 && kLast.ph <= 4.6 ? "ok" : "marginal" },
+  { id: "temp", label: "Temp. Tanque", value: kLast.temp.toFixed(1), unit: "°C", icon: "Thermometer", delta: "crash frío", trend: "down", status: kLast.temp <= 6 ? "ok" : "alert" },
+  { id: "vel", label: "Vel. Fermentación", value: velocidad.toFixed(2), unit: "°P/día", icon: "TrendingDown", delta: "en descenso", trend: "down", status: "ok" },
+  { id: "diace", label: "Diacetilo", value: "0.08", unit: "ppm", icon: "Waves", delta: "< 0.10 umbral", trend: "down", status: "ok" },
+]
+
+// Fases del proceso para marcar en el eje X
+export const kineticsPhases = [
+  { h: 24, label: "Fase Alta" },
+  { h: 96, label: "Descanso Diacetilo" },
+  { h: 132, label: "Crash Frío" },
+]

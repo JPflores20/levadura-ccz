@@ -3,6 +3,7 @@ import { GitCompare, LineChart, Sprout } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TopNav } from "@/components/dashboard/top-nav"
 import { PropagationTab } from "@/components/dashboard/propagation-tab"
+import { CineticaTab } from "@/components/dashboard/cinetica-tab"
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -39,7 +40,7 @@ export default function Page() {
             <PropagationTab />
           </TabsContent>
           <TabsContent value="cinetica" className="mt-4">
-            <Placeholder title="Cinética de Fermentación" />
+            <CineticaTab />
           </TabsContent>
           <TabsContent value="comparacion" className="mt-4">
             <Placeholder title="Comparación de Cultivos" />
