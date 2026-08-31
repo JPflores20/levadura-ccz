@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import useSWR from 'swr'
 import { Activity, Droplets, Gauge, Percent } from "lucide-react"
 import { CultureSummaryColumn } from "./comparison/culture-summary-column"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { ExpandableCard } from "./expandable-card"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
 
@@ -18,14 +18,19 @@ export function ComparacionTab() {
   
   const rawData = dbData?.rawData || []
 
-  // Extraer las combinaciones únicas para los lotes
-  const uniqueLotes = rawData.map((d: any, index: number) => {
-    return {
-      id: index.toString(),
-      label: `${d.tanque || 'N/A'} (${d.tipoLev || 'N/A'} - ${d.fecha || 'N/A'})`,
-      data: d
+  // Extraer combinaciones únicas para los lotes (agrupando por tanque, tipoLev y fecha inicial)
+  const uniqueLotesMap = new Map()
+  rawData.forEach((d: any, index: number) => {
+    const label = `${d.tanque || 'N/A'} (${d.tipoLev || 'N/A'} - ${d.fecha || 'N/A'})`
+    if (!uniqueLotesMap.has(label)) {
+      uniqueLotesMap.set(label, {
+        id: index.toString(),
+        label,
+        data: d
+      })
     }
   })
+  const uniqueLotes = Array.from(uniqueLotesMap.values())
 
   const [loteAId, setLoteAId] = useState<string>(uniqueLotes[0]?.id || "")
   const [loteBId, setLoteBId] = useState<string>(uniqueLotes[1]?.id || uniqueLotes[0]?.id || "")
@@ -48,35 +53,49 @@ export function ComparacionTab() {
   const kpisA = getKpis(loteA)
   const kpisB = getKpis(loteB)
 
-  // Datos para las gráficas de barras comparativas
-  const barDataViab = [
-    { name: 'Viabilidad (%)', CultivoA: loteA?.data?.viab || 0, CultivoB: loteB?.data?.viab || 0 }
-  ]
-  const barDataConteo = [
-    { name: 'Conteo Celular', CultivoA: loteA?.data?.conteo || 0, CultivoB: loteB?.data?.conteo || 0 }
-  ]
-  const barDataVigor = [
-    { name: 'Vigor', CultivoA: loteA?.data?.vigor || 0, CultivoB: loteB?.data?.vigor || 0 }
-  ]
-  const barDataPlato = [
-    { name: 'Grados Plato (°P)', CultivoA: loteA?.data?.plato || 0, CultivoB: loteB?.data?.plato || 0 }
-  ]
-  const barDataPh = [
-    { name: 'pH', CultivoA: loteA?.data?.ph || 0, CultivoB: loteB?.data?.ph || 0 }
-  ]
+  // Agrupar los lotes por tanque y tipo de levadura para la cinética
+  const getBatchData = (selectedId: string) => {
+    const selected = uniqueLotes.find((l: any) => l.id === selectedId)
+    if (!selected) return []
+    return rawData.filter((d: any) => d.tanque === selected.data.tanque && d.tipoLev === selected.data.tipoLev)
+  }
 
-  const CustomBarChart = ({ data, title }: { data: any[], title: string }) => (
+  const batchDataA = getBatchData(loteAId)
+  const batchDataB = getBatchData(loteBId)
+
+  // Combinar los datos por índice para que Recharts pueda graficar dos líneas empalmadas
+  const maxLen = Math.max(batchDataA.length, batchDataB.length)
+  const kineticsData = []
+  for (let i = 0; i < maxLen; i++) {
+    const a = batchDataA[i]
+    const b = batchDataB[i]
+    kineticsData.push({
+      paso: `Muestra ${i + 1}`,
+      tooltipA: a ? a.fecha : null,
+      tooltipB: b ? b.fecha : null,
+      viabA: a ? a.viab : null,
+      viabB: b ? b.viab : null,
+      conteoA: a ? a.conteo : null,
+      conteoB: b ? b.conteo : null,
+      vigorA: a ? a.vigor : null,
+      vigorB: b ? b.vigor : null,
+      platoA: a ? a.plato : null,
+      platoB: b ? b.plato : null,
+    })
+  }
+
+  const CustomLineChart = ({ dataKeyA, dataKeyB, title, yAxisLabel }: { dataKeyA: string, dataKeyB: string, title: string, yAxisLabel: string }) => (
     <ExpandableCard title={title}>
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={kineticsData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-          <XAxis dataKey="name" {...axisProps} />
-          <YAxis {...axisProps} />
-          <Tooltip contentStyle={tooltipStyle.contentStyle} cursor={{fill: 'transparent'}} />
+          <XAxis dataKey="paso" {...axisProps} />
+          <YAxis {...axisProps} label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', fill: '#888', dy: 40 }} />
+          <Tooltip contentStyle={tooltipStyle.contentStyle} />
           <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-          <Bar dataKey="CultivoA" name={loteA?.label || "Cultivo A"} fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="CultivoB" name={loteB?.label || "Cultivo B"} fill="#ef4444" radius={[4, 4, 0, 0]} />
-        </BarChart>
+          <Line type="monotone" dataKey={dataKeyA} name={loteA?.label || "Cultivo A"} stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+          <Line type="monotone" dataKey={dataKeyB} name={loteB?.label || "Cultivo B"} stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        </LineChart>
       </ResponsiveContainer>
     </ExpandableCard>
   )
@@ -141,16 +160,15 @@ export function ComparacionTab() {
 
       {/* Título Comparativa */}
       <div className="flex items-center justify-between border-b border-yellow-500/40 pb-2 mt-2">
-        <h2 className="text-sm font-bold text-yellow-500 tracking-widest">COMPARATIVA DE VARIABLES (CULTIVO A VS B)</h2>
+        <h2 className="text-sm font-bold text-yellow-500 tracking-widest">CINÉTICA COMPARATIVA (CULTIVO A VS B)</h2>
       </div>
 
-      {/* Grillas Comparativas de Barras */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        <CustomBarChart data={barDataViab} title="Viabilidad (%)" />
-        <CustomBarChart data={barDataConteo} title="Conteo Celular (x10^6/mL)" />
-        <CustomBarChart data={barDataVigor} title="Vigor" />
-        <CustomBarChart data={barDataPlato} title="Grados Plato (°P)" />
-        <CustomBarChart data={barDataPh} title="Evolución del pH" />
+      {/* Grillas Comparativas de Líneas (Cinéticas) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CustomLineChart dataKeyA="conteoA" dataKeyB="conteoB" title="Cinética de Conteo Celular" yAxisLabel="x10^6 Cel/mL" />
+        <CustomLineChart dataKeyA="viabA" dataKeyB="viabB" title="Cinética de Viabilidad" yAxisLabel="%" />
+        <CustomLineChart dataKeyA="vigorA" dataKeyB="vigorB" title="Cinética de Vitalidad (Vigor)" yAxisLabel="Puntos" />
+        <CustomLineChart dataKeyA="platoA" dataKeyB="platoB" title="Cinética de Grados Plato" yAxisLabel="°P" />
       </div>
     </div>
   )
