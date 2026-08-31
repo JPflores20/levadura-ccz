@@ -21,10 +21,10 @@ export function KpiCard({ kpi }: { kpi: Kpi }) {
   const valueColor = kpi.status === "ok" ? "text-green-500" : "text-yellow-500"
 
   return (
-    <Card className="gap-0 border-yellow-600/30 bg-zinc-900 py-0 text-white shadow-none">
-      <CardContent className="flex flex-col gap-2 p-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
-          <Icon className="size-3.5 text-yellow-500/80" />
+    <Card className="overflow-hidden gap-0 border-yellow-500/40 bg-[#121212] py-0 text-white shadow-none">
+      <CardContent className="flex flex-col gap-2 p-3 pb-0">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-yellow-500 uppercase">
+          <Icon className="size-3.5 text-yellow-500" />
           <span className="truncate">{kpi.label}</span>
         </div>
 
@@ -35,23 +35,22 @@ export function KpiCard({ kpi }: { kpi: Kpi }) {
           <span className="text-xs text-zinc-500">{kpi.unit}</span>
         </div>
 
-        <div className="text-[10px] font-mono text-zinc-500">{kpi.lc}</div>
-
-        <div className="h-8 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={kpi.spark} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
-              <Line
-                type="monotone"
-                dataKey="v"
-                stroke="#eab308"
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <div className="text-[10px] font-mono text-zinc-500 mb-1">{kpi.lc}</div>
       </CardContent>
+      <div className="h-8 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={kpi.spark} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <Line
+              type="monotone"
+              dataKey="v"
+              stroke="#eab308"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </Card>
   )
 }

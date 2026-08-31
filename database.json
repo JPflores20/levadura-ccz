@@ -1,0 +1,712 @@
+{
+  "stats": [
+    {
+      "id": "viab",
+      "indicatorName": "Viabilidad (%)",
+      "media": 96.57,
+      "standardDeviation": 3.37,
+      "cp": 0.25,
+      "cpk": 0.16,
+      "pp": 0.25,
+      "ppk": 0.16,
+      "evaluationStatus": "red"
+    },
+    {
+      "id": "conteo",
+      "indicatorName": "Conteo Celular (x10^6/mL)",
+      "media": 45.77,
+      "standardDeviation": 38.17,
+      "cp": 0.35,
+      "cpk": 0,
+      "pp": 0.35,
+      "ppk": 0,
+      "evaluationStatus": "red"
+    },
+    {
+      "id": "vig",
+      "indicatorName": "% Células Vigorosas",
+      "media": 2.35,
+      "standardDeviation": 0.88,
+      "cp": 2.26,
+      "cpk": 0,
+      "pp": 2.26,
+      "ppk": 0,
+      "evaluationStatus": "red"
+    },
+    {
+      "id": "ph",
+      "indicatorName": "pH",
+      "media": 4.52,
+      "standardDeviation": 0.53,
+      "cp": 0.47,
+      "cpk": 0.33,
+      "pp": 0.47,
+      "ppk": 0.33,
+      "evaluationStatus": "red"
+    },
+    {
+      "id": "plato",
+      "indicatorName": "°P en Mosto (Plato)",
+      "media": 12.89,
+      "standardDeviation": 3.24,
+      "cp": 0.41,
+      "cpk": 0.32,
+      "pp": 0.41,
+      "ppk": 0.32,
+      "evaluationStatus": "red"
+    }
+  ],
+  "rawData": [
+    {
+      "fecha": "2025-07-25",
+      "tipoLev": "Modelo",
+      "tanque": "TP1",
+      "plato": 9.04,
+      "ph": 3.95,
+      "conteo": 48.9,
+      "viab": 97,
+      "vigor": 2
+    },
+    {
+      "fecha": "2025-07-25",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 14.2,
+      "ph": 4.63,
+      "conteo": 18.9,
+      "viab": 95,
+      "vigor": 2
+    },
+    {
+      "fecha": "2025-08-15",
+      "tipoLev": "Modelo",
+      "tanque": "TP1",
+      "plato": 11.22,
+      "ph": 4,
+      "conteo": 75.9,
+      "viab": 94,
+      "vigor": 2
+    },
+    {
+      "fecha": "2025-08-16",
+      "tipoLev": "Americana",
+      "tanque": "TCC 13",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 70.5,
+      "viab": 93,
+      "vigor": 4
+    },
+    {
+      "fecha": "2025-08-30",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 45.8,
+      "viab": 90,
+      "vigor": 4
+    },
+    {
+      "fecha": "2025-09-01",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 5.88,
+      "ph": 4.15,
+      "conteo": 59.6,
+      "viab": 84,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-09-27",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 11.2,
+      "ph": 4.5,
+      "conteo": 67,
+      "viab": 80,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-09-29",
+      "tipoLev": "Modelo",
+      "tanque": "TP2",
+      "plato": 9.86,
+      "ph": 4.41,
+      "conteo": 62,
+      "viab": 90,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-10-03",
+      "tipoLev": "Modelo",
+      "tanque": "TP3",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 63.5,
+      "viab": 96,
+      "vigor": 4
+    },
+    {
+      "fecha": "2025-10-26",
+      "tipoLev": "Modelo",
+      "tanque": "TP3",
+      "plato": 14.29,
+      "ph": 4.75,
+      "conteo": 69.7,
+      "viab": 87,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-10-27",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 11.72,
+      "ph": 4.51,
+      "conteo": 67.5,
+      "viab": 96,
+      "vigor": 2
+    },
+    {
+      "fecha": "2025-10-28",
+      "tipoLev": "Americana",
+      "tanque": "TCC 20",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 69.7,
+      "viab": 97,
+      "vigor": 3
+    },
+    {
+      "fecha": "2025-11-03",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 7.86,
+      "ph": 4.06,
+      "conteo": 68.4,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-11-02",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 10.26,
+      "ph": 4.28,
+      "conteo": 68.4,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2025-11-06",
+      "tipoLev": "Modelo",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 4.21,
+      "conteo": 84.5,
+      "viab": 95,
+      "vigor": 3
+    },
+    {
+      "fecha": "2026-01-27",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 14.47,
+      "ph": 4.46,
+      "conteo": 41.34,
+      "viab": 95,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-02-19",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 9.58,
+      "ph": 4.28,
+      "conteo": 43.62,
+      "viab": 96,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-06-12",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 12",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 15.28,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-16",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP2",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 104,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-16",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP3",
+      "plato": 14.28,
+      "ph": 4.57,
+      "conteo": 47.36,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-17",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 12",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 32.02,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-18",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP3",
+      "plato": 11.9,
+      "ph": 4.48,
+      "conteo": 21.25,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-18",
+      "tipoLev": "MODELO",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 15.63,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-19",
+      "tipoLev": "MODELO",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 53.84,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-19",
+      "tipoLev": "MODELO",
+      "tanque": "TP2",
+      "plato": 15.89,
+      "ph": 4.94,
+      "conteo": 8.09,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-20",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 12 - 4",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 46.6,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-21",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP3",
+      "plato": 12.9,
+      "ph": 4.39,
+      "conteo": 244.86,
+      "viab": 98,
+      "vigor": 1
+    },
+    {
+      "fecha": "2026-06-21",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 18",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 16.72,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-23",
+      "tipoLev": "MODELO",
+      "tanque": "TP2",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 83.18,
+      "viab": 98,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-06-23",
+      "tipoLev": "MODELO",
+      "tanque": "TP3",
+      "plato": 14.98,
+      "ph": 4.72,
+      "conteo": 14.7,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-25",
+      "tipoLev": "MODELO",
+      "tanque": "TP3",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 14.18,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-25",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 15.33,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-25",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 18",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 32.16,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-27",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 79.08,
+      "viab": 97,
+      "vigor": 3
+    },
+    {
+      "fecha": "2026-06-27",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP2",
+      "plato": 16.42,
+      "ph": 4.61,
+      "conteo": 12.7,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-28",
+      "tipoLev": "MODELO",
+      "tanque": "TCC 11",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 47.38,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-29",
+      "tipoLev": "MODELO",
+      "tanque": "",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 24.57,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-28",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 18 - 5",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 38.6,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-06-29",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP2",
+      "plato": 6.01,
+      "ph": 3.95,
+      "conteo": 56.8,
+      "viab": 98,
+      "vigor": 1
+    },
+    {
+      "fecha": "2026-06-29",
+      "tipoLev": "AMERICANA",
+      "tanque": "TP3",
+      "plato": 13.4,
+      "ph": 7.4,
+      "conteo": 35.5,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-02",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 16.68,
+      "ph": 4.6,
+      "conteo": 20.36,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-03",
+      "tipoLev": "Americana",
+      "tanque": "TP1",
+      "plato": 10.5,
+      "ph": 4.3,
+      "conteo": 122.86,
+      "viab": 98,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-07-03",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 16.4,
+      "ph": 4.23,
+      "conteo": 20.62,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-04",
+      "tipoLev": "AMERICANA",
+      "tanque": "TCC 8",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 54.92,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-07",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 16.8,
+      "ph": 4.2,
+      "conteo": 50.24,
+      "viab": 99,
+      "vigor": 1
+    },
+    {
+      "fecha": "2026-07-07",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 15.4,
+      "ph": 4.7,
+      "conteo": 36.37,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-09",
+      "tipoLev": "Modelo",
+      "tanque": "TP1",
+      "plato": 13.8,
+      "ph": 4.79,
+      "conteo": 16.53,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-09",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 15.62,
+      "ph": 4.77,
+      "conteo": 29.07,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-10",
+      "tipoLev": "Modelo",
+      "tanque": "TP1",
+      "plato": 15.2,
+      "ph": 4.85,
+      "conteo": 49.31,
+      "viab": 98,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-07-10",
+      "tipoLev": "Modelo",
+      "tanque": "TP2",
+      "plato": 13.1,
+      "ph": 4.72,
+      "conteo": 8.83,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-13",
+      "tipoLev": "Americana",
+      "tanque": "TCC 6",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 12.58,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-13",
+      "tipoLev": "Modelo",
+      "tanque": "TP2",
+      "plato": 12,
+      "ph": 4.56,
+      "conteo": 26.5,
+      "viab": 98,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-07-13",
+      "tipoLev": "Modelo",
+      "tanque": "TP3",
+      "plato": 15.77,
+      "ph": 4.72,
+      "conteo": 16.5,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-17",
+      "tipoLev": "Americana",
+      "tanque": "TP1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 40.8,
+      "viab": 98,
+      "vigor": 3
+    },
+    {
+      "fecha": "2026-07-17",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 13.81,
+      "ph": 4.58,
+      "conteo": 12.6,
+      "viab": 97,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-19",
+      "tipoLev": "Modelo",
+      "tanque": "TCC  7",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 8.42,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-20",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 8.21,
+      "ph": 4.28,
+      "conteo": 42.6,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-20",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 14.91,
+      "ph": 4.9,
+      "conteo": 12.4,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-23",
+      "tipoLev": "Americana",
+      "tanque": "TP1",
+      "plato": 16.5,
+      "ph": 4.32,
+      "conteo": 11.58,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-23",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 17.5,
+      "ph": 4.23,
+      "conteo": 16.42,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-24",
+      "tipoLev": "Modelo",
+      "tanque": "TCC 7 - 22",
+      "plato": 16.4,
+      "ph": 4.23,
+      "conteo": 23.92,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-24",
+      "tipoLev": "Americana",
+      "tanque": "TP1",
+      "plato": 8.05,
+      "ph": 4.31,
+      "conteo": 76.08,
+      "viab": 98,
+      "vigor": 3
+    },
+    {
+      "fecha": "2026-07-24",
+      "tipoLev": "Americana",
+      "tanque": "TP3",
+      "plato": 8,
+      "ph": 4.26,
+      "conteo": 27.47,
+      "viab": 98,
+      "vigor": 2
+    },
+    {
+      "fecha": "2026-07-26",
+      "tipoLev": "Americana",
+      "tanque": "TCC 1",
+      "plato": 0,
+      "ph": 0,
+      "conteo": 10.55,
+      "viab": 98,
+      "vigor": 0
+    },
+    {
+      "fecha": "2026-07-27",
+      "tipoLev": "Americana",
+      "tanque": "TP2",
+      "plato": 15.4,
+      "ph": 4.65,
+      "conteo": 142.21,
+      "viab": 98,
+      "vigor": 2
+    }
+  ],
+  "ultimaActualizacion": "2026-08-25T13:50:21.376Z"
+}

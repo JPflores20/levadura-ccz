@@ -17,17 +17,17 @@ function generateSeries(): PropagationPoint[] {
   for (let i = 0; i < total; i++) {
     const t = i / (total - 1)
     // Viabilidad: comienza alta, ligera caída y recuperación
-    const viabilidad = 97.5 - Math.sin(t * Math.PI) * 4.5 + (Math.random() - 0.5) * 1.2
+    const viabilidad = 97.5 - Math.sin(t * Math.PI) * 4.5 + (Math.sin(i * 12.34) * 0.6)
     // Células vigorosas: sigue a la viabilidad pero por debajo
-    const vigorosas = viabilidad - 6 - Math.sin(t * Math.PI) * 3 + (Math.random() - 0.5) * 1.5
+    const vigorosas = viabilidad - 6 - Math.sin(t * Math.PI) * 3 + (Math.sin(i * 56.78) * 0.75)
     // Conteo celular: curva de crecimiento sigmoide
-    const conteo = 40 + 180 / (1 + Math.exp(-(t - 0.45) * 9)) + (Math.random() - 0.5) * 6
+    const conteo = 40 + 180 / (1 + Math.exp(-(t - 0.45) * 9)) + (Math.sin(i * 90.12) * 3)
     // °P en mosto: consumo de azúcares -> desciende
-    const plato = 14.2 - t * 6.8 + (Math.random() - 0.5) * 0.4
+    const plato = 14.2 - t * 6.8 + (Math.sin(i * 34.56) * 0.2)
     // pH: leve descenso
-    const ph = 5.4 - t * 0.9 + (Math.random() - 0.5) * 0.06
+    const ph = 5.4 - t * 0.9 + (Math.sin(i * 78.90) * 0.03)
     // Temperatura controlada alrededor de 20°C
-    const temp = 20 + Math.sin(t * Math.PI * 2) * 1.1 + (Math.random() - 0.5) * 0.5
+    const temp = 20 + Math.sin(t * Math.PI * 2) * 1.1 + (Math.sin(i * 23.45) * 0.25)
 
     points.push({
       hora: `${i * 2}h`,
@@ -42,9 +42,16 @@ function generateSeries(): PropagationPoint[] {
   return points
 }
 
-export const propagationData = generateSeries()
+export const propagationData: PropagationPoint[] = []
 
-const last = propagationData[propagationData.length - 1]
+const last = propagationData.length > 0 ? propagationData[propagationData.length - 1] : {
+  viabilidad: 0,
+  vigorosas: 0,
+  conteo: 0,
+  plato: 0,
+  ph: 0,
+  temp: 0
+} as PropagationPoint
 
 // Composición del cultivo (barras apiladas 100%) por punto de muestreo
 export const composicionData = propagationData
@@ -141,6 +148,19 @@ export const kpis: Kpi[] = [
   },
 ]
 
+// Datos para diagramas de dispersión
+export const scatterData = propagationData.map((p, i) => {
+  const t = i / (propagationData.length - 1)
+  const aireacion = 15 - t * 5 + (Math.sin(i * 11.1) * 1) // L/min
+  const zn = 0.15 + (Math.sin(i * 22.2) * 0.025) // mg/L
+  return {
+    ...p,
+    aireacion: Number(aireacion.toFixed(2)),
+    zn: Number(zn.toFixed(2))
+  }
+})
+
+
 // Tabla de variables del proceso
 export type ProcessVar = {
   variable: string
@@ -230,15 +250,15 @@ function generateKinetics(): KineticPoint[] {
     const h = i * 6
     const t = i / (total - 1)
     // °P: curva de atenuación exponencial de ~12.6 -> ~2.6
-    const plato = 2.6 + 10 * Math.exp(-t * 3.4) + (Math.random() - 0.5) * 0.18
+    const plato = 2.6 + 10 * Math.exp(-t * 3.4) + (Math.sin(i * 33.3) * 0.09)
     // pH: desciende de 5.3 a ~4.1 y se estabiliza
-    const ph = 4.1 + 1.2 * Math.exp(-t * 2.6) + (Math.random() - 0.5) * 0.04
+    const ph = 4.1 + 1.2 * Math.exp(-t * 2.6) + (Math.sin(i * 44.4) * 0.02)
     // Temp: rampa de fermentación 12 -> 20°C con descanso diacetilo, luego crash a 4°C
     let temp: number
     if (t < 0.55) temp = 12 + (t / 0.55) * 8
     else if (t < 0.75) temp = 20
     else temp = 20 - ((t - 0.75) / 0.25) * 16
-    temp += (Math.random() - 0.5) * 0.4
+    temp += (Math.sin(i * 55.5) * 0.2)
 
     points.push({
       hora: `${h}h`,
@@ -290,3 +310,107 @@ export const kineticsPhases = [
   { h: 96, label: "Descanso Diacetilo" },
   { h: 132, label: "Crash Frío" },
 ]
+
+export const kineticsCellsData = kineticsData.map((d, i) => {
+  const t = i / (kineticsData.length - 1)
+  const viabilidad = 98 - t * 15 + (Math.sin(i * 66.6) * 1) // Starts 98, ends 83
+  const conteo = 150 + Math.sin(t * Math.PI) * 120 + (Math.sin(i * 77.7) * 5) // Peaks in middle
+  return {
+    hora: d.hora,
+    viabilidad: Math.max(0, Math.min(100, viabilidad)),
+    conteo: Math.max(0, conteo)
+  }
+})
+
+export const kineticsFlavorData = kineticsData.map((d, i) => {
+  const t = i / (kineticsData.length - 1)
+  const diacetilo = (t < 0.3 ? 0.05 + t * 0.8 : 0.29 - (t - 0.3) * 0.4) + (Math.sin(i * 88.8) * 0.01)
+  const esteres = t * 12 + (Math.sin(i * 99.9) * 0.5)
+  const alcoholes = t * 8 + (Math.sin(i * 10.1) * 0.25)
+  return {
+    hora: d.hora,
+    diacetilo: Math.max(0, diacetilo),
+    esteres: Math.max(0, esteres),
+    alcoholes: Math.max(0, alcoholes)
+  }
+})
+
+export const kineticsScatterData = kineticsFlavorData.map((f, i) => {
+  const d = kineticsData[i]
+  const c = kineticsCellsData[i]
+  return {
+    ...f,
+    ...d,
+    ...c
+  }
+})
+
+export const kineticsProcessData = [
+  { indicator: "Extracto Final", spec: "< 2.8 °P", mean: "2.65", cpk: "1.24", status: "ok" },
+  { indicator: "Atenuación", spec: "> 78 %", mean: "79.1", cpk: "1.10", status: "ok" },
+  { indicator: "pH Final", spec: "4.0 - 4.4", mean: "4.2", cpk: "1.35", status: "ok" },
+  { indicator: "Diacetilo", spec: "< 0.10 ppm", mean: "0.08", cpk: "0.95", status: "warn" },
+  { indicator: "Viabilidad Cosecha", spec: "> 85 %", mean: "83.5", cpk: "0.80", status: "alert" },
+]
+
+export const kineticsExecutiveReport = [
+  { text: "Fermentación completada en tiempo esperado (168h).", type: "ok" },
+  { text: "Perfil de atenuación conforme al estándar de la cepa.", type: "ok" },
+  { text: "Niveles de diacetilo en límite marginal (0.08 ppm).", type: "warn" },
+  { text: "Viabilidad final por debajo del 85%, evaluar para reprópago.", type: "alert" },
+]
+
+// ---------------------------------------------------------------------------
+// Comparación de Cultivos (FASE 3)
+// ---------------------------------------------------------------------------
+
+export const comparacionKpis = [
+  { label: "Viabilidad Inicial", unit: "%", valA: 0, valB: 0, better: "A" },
+  { label: "Conteo Máximo", unit: "M/mL", valA: 0, valB: 0, better: "A" },
+  { label: "Atenuación Aparente", unit: "%", valA: 0, valB: 0, better: "A" },
+  { label: "Tiempo Final", unit: "h", valA: 0, valB: 0, better: "A" },
+  { label: "pH Final", unit: "", valA: 0, valB: 0, better: "A" },
+  { label: "Velocidad Promedio", unit: "°P/d", valA: 0, valB: 0, better: "A" },
+  { label: "Diacetilo Final", unit: "ppm", valA: 0, valB: 0, better: "A" },
+  { label: "Esteres Totales", unit: "ppm", valA: 0, valB: 0, better: "A" },
+]
+
+export const comparacionResumen = [
+  { parametro: "Cinética de Fermentación", ganador: "Cultivo A", diff: "+15% vel." },
+  { parametro: "Rendimiento (Atenuación)", ganador: "Cultivo A", diff: "+2.3%" },
+  { parametro: "Perfil Sensorial", ganador: "Cultivo A", diff: "Menor Diac." },
+  { parametro: "Salud y Cosecha", ganador: "Cultivo B", diff: "+5% Viab. Fin" },
+]
+
+export const comparacionSeriesData = Array.from({ length: 29 }).map((_, i) => {
+  const h = i * 6
+  const t = i / 28
+  
+  // Atenuación (°P)
+  const platoA = 2.4 + 10.2 * Math.exp(-t * 4.0) + (Math.sin(i * 12.1) * 0.05)
+  const platoB = 2.8 + 9.8 * Math.exp(-t * 3.2) + (Math.sin(i * 13.1) * 0.05)
+  
+  // Velocidad (°P/d) (derivada simulada)
+  const velA = Math.max(0, 10.2 * 4.0 * Math.exp(-t * 4.0) / 4) + (Math.sin(i * 14.1) * 0.1)
+  const velB = Math.max(0, 9.8 * 3.2 * Math.exp(-t * 3.2) / 4) + (Math.sin(i * 15.1) * 0.1)
+  
+  // pH
+  const phA = 4.15 + 1.15 * Math.exp(-t * 3.0) + (Math.sin(i * 16.1) * 0.025)
+  const phB = 4.25 + 1.05 * Math.exp(-t * 2.5) + (Math.sin(i * 17.1) * 0.025)
+  
+  // Diacetilo
+  const diacA = (t < 0.2 ? 0.05 + t * 0.5 : 0.15 - (t - 0.2) * 0.2) * (1 - t) + (Math.sin(i * 18.1) * 0.005)
+  const diacB = (t < 0.25 ? 0.05 + t * 0.6 : 0.20 - (t - 0.25) * 0.15) * (1 - t * 0.5) + (Math.sin(i * 19.1) * 0.005)
+
+  return {
+    hora: `${h}h`,
+    platoA: Number(platoA.toFixed(2)),
+    platoB: Number(platoB.toFixed(2)),
+    velA: Number(velA.toFixed(2)),
+    velB: Number(velB.toFixed(2)),
+    phA: Number(phA.toFixed(2)),
+    phB: Number(phB.toFixed(2)),
+    diacA: Math.max(0, Number(diacA.toFixed(3))),
+    diacB: Math.max(0, Number(diacB.toFixed(3))),
+  }
+})

@@ -1,0 +1,152 @@
+"use client"
+import React, { useState } from "react"
+import useSWR from 'swr'
+import { ExcelProcessorAber } from "./cultivo/excel-processor-aber"
+import { ExpandableCard } from "./expandable-card"
+import { ScatterChart, Scatter, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis } from "recharts"
+import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
+
+export function CultivoTab() {
+  const { data: dbData } = useSWR('/api/get-aber', fetcher, { 
+    revalidateOnFocus: true,
+    dedupingInterval: 60000 
+  })
+  
+  const rawData = dbData?.rawData || []
+
+  // Correlation Data (Scatter Plot)
+  const correlationData = rawData.map((d: any) => ({
+    linea: d.linea,
+    fecha: d.fecha,
+    conteoAber: d.conteoAber,
+    conteoLac: d.conteoLacAvg,
+    diferencia: d.diferencia
+  }))
+
+  const correlationLinea1 = correlationData.filter((d: any) => d.linea === "LINEA 1")
+  const correlationLinea2 = correlationData.filter((d: any) => d.linea === "LINEA 2")
+
+  // Line Chart Data for Diferencia over time
+  // Agrupar por fecha
+  const fechasUnicas = Array.from(new Set(rawData.map((d: any) => d.fecha))) as string[]
+  const diffOverTimeData = fechasUnicas.map(f => {
+    const l1 = rawData.find((d: any) => d.fecha === f && d.linea === "LINEA 1")
+    const l2 = rawData.find((d: any) => d.fecha === f && d.linea === "LINEA 2")
+    return {
+      fecha: f,
+      diffL1: l1 ? l1.diferencia : null,
+      diffL2: l2 ? l2.diferencia : null,
+      solidosL1: l1 ? l1.solidosAvg : null,
+      solidosL2: l2 ? l2.solidosAvg : null
+    }
+  })
+
+  // Ideal Line para Scatter Plot
+  const maxVal = Math.max(
+    ...correlationData.map((d: any) => Math.max(d.conteoAber, d.conteoLac))
+  )
+  const idealLine = [
+    { conteoAber: 0, conteoLac: 0 },
+    { conteoAber: maxVal, conteoLac: maxVal }
+  ]
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={tooltipStyle.contentStyle} className="p-2 border border-yellow-500/50 bg-black">
+          <p className="font-bold text-yellow-500 mb-1">{data.linea} ({data.fecha})</p>
+          <p className="text-xs">ABER: <span className="text-white">{data.conteoAber.toFixed(1)}</span></p>
+          <p className="text-xs">LAC (Manual): <span className="text-white">{data.conteoLac.toFixed(1)}</span></p>
+          <p className="text-xs mt-1 pt-1 border-t border-zinc-700">Diferencia: <span className={data.diferencia > 0 ? 'text-red-400' : 'text-green-400'}>{data.diferencia.toFixed(1)}</span></p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Header and Upload */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3">
+        <div className="flex flex-col">
+          <h2 className="text-sm font-bold text-yellow-500 tracking-widest">VALIDACIÓN DE SENSORES ABER</h2>
+          <p className="text-xs text-zinc-400">Comparativa Conteo Automatizado vs Siembra Microbiológica</p>
+        </div>
+        <ExcelProcessorAber />
+      </div>
+
+      {rawData.length === 0 ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/50">
+          <p className="text-sm font-medium text-zinc-400">Sube el archivo de Validación ABER para ver las métricas.</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            {/* SCATTER PLOT CORRELATION */}
+            <ExpandableCard title="Correlación ABER vs Laboratorio">
+              <div className="text-xs text-zinc-400 mb-2 italic">Una calibración perfecta debería mostrar todos los puntos sobre la línea diagonal dorada.</div>
+              <ResponsiveContainer width="100%" height={300}>
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
+                  <XAxis type="number" dataKey="conteoAber" name="Conteo ABER" {...axisProps} label={{ value: 'Sensor ABER', position: 'insideBottom', offset: -10, fill: '#888' }} domain={[0, 'dataMax + 200']} />
+                  <YAxis type="number" dataKey="conteoLac" name="Conteo LAC" {...axisProps} label={{ value: 'Laboratorio', angle: -90, position: 'insideLeft', fill: '#888' }} domain={[0, 'dataMax + 200']} />
+                  <ZAxis type="number" range={[50, 50]} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  
+                  {/* Ideal Line */}
+                  <Line data={idealLine} dataKey="conteoLac" stroke="#eab308" strokeDasharray="5 5" dot={false} activeDot={false} legendType="none" />
+                  
+                  <Scatter name="Línea 1" data={correlationLinea1} fill="#3b82f6" opacity={0.8} />
+                  <Scatter name="Línea 2" data={correlationLinea2} fill="#ef4444" opacity={0.8} />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </ExpandableCard>
+
+            {/* ERROR TENDENCY */}
+            <ExpandableCard title="Tendencia de Desviación (Diferencia)">
+              <div className="text-xs text-zinc-400 mb-2 italic">Diferencia neta (ABER - LAC). Valores cercanos a cero indican precisión.</div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={diffOverTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                  <XAxis dataKey="fecha" {...axisProps} />
+                  <YAxis {...axisProps} />
+                  <Tooltip contentStyle={tooltipStyle.contentStyle} cursor={{fill: 'transparent'}} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  <Bar dataKey="diffL1" name="Error Línea 1" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="diffL2" name="Error Línea 2" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ExpandableCard>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 mt-2">
+            <ExpandableCard title="Impacto del Porcentaje de Sólidos en el Sensor">
+              <div className="text-xs text-zinc-400 mb-2 italic">¿Un mayor % de sólidos genera mayor error en el sensor ABER?</div>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={diffOverTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                  <XAxis dataKey="fecha" {...axisProps} />
+                  <YAxis yAxisId="left" {...axisProps} label={{ value: 'Error', angle: -90, position: 'insideLeft', fill: '#888' }} />
+                  <YAxis yAxisId="right" orientation="right" {...axisProps} label={{ value: '% Sólidos', angle: 90, position: 'insideRight', fill: '#888' }} />
+                  <Tooltip contentStyle={tooltipStyle.contentStyle} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  
+                  <Line yAxisId="left" type="monotone" dataKey="diffL1" name="Error L1" stroke="#3b82f6" strokeWidth={2} />
+                  <Line yAxisId="right" type="monotone" dataKey="solidosL1" name="% Sólidos L1" stroke="#93c5fd" strokeDasharray="3 3" />
+                  
+                  <Line yAxisId="left" type="monotone" dataKey="diffL2" name="Error L2" stroke="#ef4444" strokeWidth={2} />
+                  <Line yAxisId="right" type="monotone" dataKey="solidosL2" name="% Sólidos L2" stroke="#fca5a5" strokeDasharray="3 3" />
+                </LineChart>
+              </ResponsiveContainer>
+            </ExpandableCard>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}

@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
@@ -10,7 +9,6 @@ export const metadata: Metadata = {
   title: 'Sistema de Análisis de Levadura · HMI Cervecería',
   description:
     'Dashboard industrial para el análisis de propagación y cinética de levadura en la elaboración de cerveza.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
@@ -38,6 +36,8 @@ export const viewport: Viewport = {
   ],
 }
 
+import { Toaster } from "sonner"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,7 +47,7 @@ export default function RootLayout({
     <html lang="es" className={`dark bg-zinc-950 ${geistSans.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <Toaster theme="dark" richColors position="top-center" />
       </body>
     </html>
   )

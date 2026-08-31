@@ -1,0 +1,665 @@
+{
+  "ultimaActualizacion": "2026-08-24T21:52:07.290Z",
+  "rawData": [
+    {
+      "fecha": "27-Jul",
+      "propagacion": "BLY25XVIII",
+      "cepa": "Americana",
+      "volatil": "Diacetilo",
+      "etapa": "fermentación",
+      "vueltas": {
+        "0": 421.3,
+        "1": 343.02,
+        "2": 136.57,
+        "3": 145.98,
+        "4": 44.14,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "BLY25XVIII",
+      "cepa": "Americana",
+      "volatil": "Acetaldehido",
+      "etapa": "fermentación",
+      "vueltas": {
+        "0": 8.39,
+        "1": 9.35,
+        "2": 4.14,
+        "3": 5.55,
+        "4": 3.16,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "BLY25XVIII",
+      "cepa": "Americana",
+      "volatil": "Diacetilo",
+      "etapa": "Reposo",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 19.79,
+        "3": 27.43,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "BLY25XVIII",
+      "cepa": "Americana",
+      "volatil": "Acetaldehido",
+      "etapa": "Reposo",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 2.77,
+        "3": 4.14,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "2-Aug",
+      "propagacion": "BLY25XIX",
+      "cepa": "Americana",
+      "volatil": "Diacetilo",
+      "etapa": "fermentación",
+      "vueltas": {
+        "0": 190.31,
+        "1": 57.3,
+        "2": 117.64,
+        "3": 256.33,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "2-Aug",
+      "propagacion": "BLY25XIX",
+      "cepa": "Americana",
+      "volatil": "Acetaldehido",
+      "etapa": "fermentación",
+      "vueltas": {
+        "0": 10.1,
+        "1": 8.45,
+        "2": 7.54,
+        "3": 7.94,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "2-Aug",
+      "propagacion": "BLY25XIX",
+      "cepa": "Americana",
+      "volatil": "Diacetilo",
+      "etapa": "Reposo",
+      "vueltas": {
+        "0": 16.82,
+        "1": 22.44,
+        "2": 28.32,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "2-Aug",
+      "propagacion": "BLY25XIX",
+      "cepa": "Americana",
+      "volatil": "Acetaldehido",
+      "etapa": "Reposo",
+      "vueltas": {
+        "0": 7.05,
+        "1": 5.6,
+        "2": 4.08,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "FECHA\r\nINICIO",
+      "propagacion": "PROPAGACIÓN",
+      "cepa": "VUELTA",
+      "volatil": "CEPA",
+      "etapa": "DIACETILO \r\nFERMENTACION\r\nBLY25XVIII",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "0",
+      "volatil": "Americana",
+      "etapa": "421.3",
+      "vueltas": {
+        "0": 8.39,
+        "1": 0,
+        "2": 0,
+        "3": 190.31,
+        "4": 10.1,
+        "5": 16.82,
+        "6": 7.05,
+        "7": 119.09,
+        "8": 8.21,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "1",
+      "volatil": "Americana",
+      "etapa": "343.02",
+      "vueltas": {
+        "0": 9.35,
+        "1": 0,
+        "2": 0,
+        "3": 57.3,
+        "4": 8.45,
+        "5": 22.44,
+        "6": 5.6,
+        "7": 225.9,
+        "8": 8.45,
+        "9": 19.86,
+        "10": 2.98
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "2",
+      "volatil": "Americana",
+      "etapa": "136.57",
+      "vueltas": {
+        "0": 4.14,
+        "1": 19.79,
+        "2": 2.77,
+        "3": 117.64,
+        "4": 7.54,
+        "5": 28.32,
+        "6": 4.08,
+        "7": 37.67,
+        "8": 2.73,
+        "9": 44.42,
+        "10": 4.67
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "3",
+      "volatil": "Americana",
+      "etapa": "145.98",
+      "vueltas": {
+        "0": 5.55,
+        "1": 27.43,
+        "2": 4.14,
+        "3": 256.33,
+        "4": 7.94,
+        "5": 63.25,
+        "6": 4.57,
+        "7": 64.2,
+        "8": 4.45,
+        "9": 19.14,
+        "10": 2.86
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "4",
+      "volatil": "Americana",
+      "etapa": "44.14",
+      "vueltas": {
+        "0": 3.16,
+        "1": 18.67,
+        "2": 5.23,
+        "3": 70.13,
+        "4": 4.59,
+        "5": 31,
+        "6": 3.42,
+        "7": 52.74,
+        "8": 5.52,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "5",
+      "volatil": "Americana",
+      "etapa": "N/A",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 171.97,
+        "4": 4.51,
+        "5": 38,
+        "6": 4.02,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "27-Jul",
+      "propagacion": "N/A",
+      "cepa": "6",
+      "volatil": "Americana",
+      "etapa": "N/A",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "VUELTA",
+      "propagacion": "0",
+      "cepa": "1",
+      "volatil": "2",
+      "etapa": "3",
+      "vueltas": {
+        "0": 4,
+        "1": 5,
+        "2": 6,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nFERMENTACION\r\nBLY25XVIII",
+      "propagacion": "421.3",
+      "cepa": "343.02",
+      "volatil": "136.57",
+      "etapa": "145.98",
+      "vueltas": {
+        "0": 44.14,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nFERMENTACION\r\nBLY25XVIII",
+      "propagacion": "8.39",
+      "cepa": "9.35",
+      "volatil": "4.14",
+      "etapa": "5.55",
+      "vueltas": {
+        "0": 3.16,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nMADURACION\r\nBLY25XVIII",
+      "propagacion": "N/A",
+      "cepa": "N/A",
+      "volatil": "19.79",
+      "etapa": "27.43",
+      "vueltas": {
+        "0": 18.67,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nMADURACION\r\nBLY25XVIII",
+      "propagacion": "N/A",
+      "cepa": "N/A",
+      "volatil": "2.77",
+      "etapa": "4.14",
+      "vueltas": {
+        "0": 5.23,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nFERMENTACION\r\nBLY25XIX",
+      "propagacion": "190.31",
+      "cepa": "57.3",
+      "volatil": "117.64",
+      "etapa": "256.33",
+      "vueltas": {
+        "0": 70.13,
+        "1": 171.97,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nFERMENTACION\r\nBLY25XIX",
+      "propagacion": "10.1",
+      "cepa": "8.45",
+      "volatil": "7.54",
+      "etapa": "7.94",
+      "vueltas": {
+        "0": 4.59,
+        "1": 4.51,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nMADURACION\r\nBLY25XIX",
+      "propagacion": "16.82",
+      "cepa": "22.44",
+      "volatil": "28.32",
+      "etapa": "63.25",
+      "vueltas": {
+        "0": 31,
+        "1": 38,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nMADURACION\r\nBLY25XIX",
+      "propagacion": "7.05",
+      "cepa": "5.6",
+      "volatil": "4.08",
+      "etapa": "4.57",
+      "vueltas": {
+        "0": 3.42,
+        "1": 4.02,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nFERMENTACION\r\nBLY25XX",
+      "propagacion": "119.09",
+      "cepa": "225.9",
+      "volatil": "37.67",
+      "etapa": "64.2",
+      "vueltas": {
+        "0": 52.74,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nFERMENTACION\r\nBLY25XX",
+      "propagacion": "8.21",
+      "cepa": "8.45",
+      "volatil": "2.73",
+      "etapa": "4.45",
+      "vueltas": {
+        "0": 5.52,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nMADURACION\r\nBLY25XX",
+      "propagacion": "N/A",
+      "cepa": "19.86",
+      "volatil": "44.42",
+      "etapa": "19.14",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nMADURACION\r\nBLY25XX",
+      "propagacion": "N/A",
+      "cepa": "2.98",
+      "volatil": "4.67",
+      "etapa": "2.86",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nFERMENTACION\r\nBLY25XXI",
+      "propagacion": "34.43",
+      "cepa": "84.11",
+      "volatil": "319.15",
+      "etapa": "94.33",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nFERMENTACION\r\nBLY25XXI",
+      "propagacion": "6.68",
+      "cepa": "4.7",
+      "volatil": "9.28",
+      "etapa": "4.28",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "DIACETILO \r\nMADURACION\r\nBLY25XXI",
+      "propagacion": "21.49",
+      "cepa": "26",
+      "volatil": "42.11",
+      "etapa": "N/A",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    },
+    {
+      "fecha": "ACETALDEHIDO\r\nMADURACION\r\nBLY25XXI",
+      "propagacion": "6.74",
+      "cepa": "2.93",
+      "volatil": "3.7",
+      "etapa": "N/A",
+      "vueltas": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0
+      }
+    }
+  ]
+}
