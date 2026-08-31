@@ -110,8 +110,8 @@ export function ComparacionTab() {
         </div>
       </div>
 
-      {/* Resumen Cultivos (KPIs y Gauges) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Resumen Cultivos (KPIs) */}
+      <div className="flex flex-col gap-4">
         {/* Lado A */}
         <CultureSummaryColumn
           cultureName={`CULTIVO A: ${loteA?.data?.tipoLev || 'N/A'}`}
