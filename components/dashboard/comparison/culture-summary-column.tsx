@@ -90,10 +90,6 @@ export function CultureSummaryColumn({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {kpis.map((kpiItem, index) => <KpiSimple key={index} kpiItem={kpiItem} />)}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <GaugeCard title="Índice Vitalidad General" value={vitalityIndex} color={vitalityColor} desc={vitalityLabel} />
-        <GaugeCard title="Eficiencia Atenuación" value={attenuationEfficiency} color={attenuationColor} desc={attenuationLabel} />
-      </div>
     </div>
   )
 }
