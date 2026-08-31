@@ -7,7 +7,6 @@ import { ViabilityChart } from "./propagation/viability-chart"
 import { VitalityCompositionChart } from "./propagation/vitality-composition-chart"
 import { CorrelationScatterGrid } from "./propagation/correlation-scatter-grid"
 import { CellCountChart } from "./propagation/cell-count-chart"
-import { ProcessVariablesTable } from "./propagation/process-variables-table"
 import { ExecutiveReport } from "./propagation/executive-report"
 import { formatExcelDate } from "@/lib/utils"
 import useSWR from 'swr'
@@ -19,6 +18,7 @@ export function PropagationTab() {
   const [filterFechas, setFilterFechas] = useState<string[]>([])
   const [filterTipos, setFilterTipos] = useState<string[]>([])
   const [filterTanques, setFilterTanques] = useState<string[]>([])
+  const [filterDobleteo, setFilterDobleteo] = useState<string[]>([])
 
   const { data: dbData } = useSWR('/api/get-propagation', fetcher, { refreshInterval: 2000 })
 
@@ -37,62 +37,117 @@ export function PropagationTab() {
   const uniqueFechas = Array.from(new Set(rawDataRaw.map((d: any) => d.fecha?.toString().trim()))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
   const uniqueTipos = Array.from(new Set(rawDataRaw.map((d: any) => d.tipoLev?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
   const uniqueTanques = Array.from(new Set(rawDataRaw.map((d: any) => d.tanque?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  const uniqueDobleteo = Array.from(new Set(rawDataRaw.map((d: any) => d.dobleteo?.toString().trim()))).filter(t => t) as string[]
 
   // Apply filters
   const rawData = rawDataRaw.filter((d: any) => {
     const dFecha = d.fecha?.toString().trim()
     const dTipo = d.tipoLev?.toString().trim().toUpperCase()
     const dTanque = d.tanque?.toString().trim().toUpperCase()
+    const dDobleteo = d.dobleteo?.toString().trim()
 
     if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
     if (filterTipos.length > 0 && !filterTipos.includes(dTipo)) return false
     if (filterTanques.length > 0 && !filterTanques.includes(dTanque)) return false
+    if (filterDobleteo.length > 0 && !filterDobleteo.includes(dDobleteo)) return false
     return true
   })
 
   const propagationPoints = rawData.map((d: any, i: number) => ({
     hora: `${i * 2}h`,
+    tanque: d.tanque,
+    fecha: d.fecha,
+    tipoLev: d.tipoLev,
     viabilidad: d.viab || 0,
     vigorosas: d.vigor || 0,
     conteo: d.conteo || 0,
     plato: d.plato || 0,
+    solidos: d.solidos || 0,
     ph: d.ph || 0,
-    temp: d.temp || 20, // default if missing
-    aireacion: 10 + (Math.sin(i) * 2), // Mock fallback si no viene
-    zn: 0.15 // Mock fallback
+    temp: d.temp || 20,
+    aireacion: 10 + (Math.sin(i) * 2),
+    zn: 0.15
   }))
 
   const hasData = propagationPoints.length > 0
   const latestData = hasData ? propagationPoints[propagationPoints.length - 1] : null
 
   const displayKpis = mockKpis.map(kpi => {
-    let val = kpi.value
-    if (kpi.id === "viabilidad") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.viabilidad > 0)
-      if (lastValid) val = lastValid.viabilidad.toFixed(1)
+    let val: any = kpi.value
+    
+    // Mapeo de IDs de KPI a IDs de stats
+    let statId = kpi.id
+    if (kpi.id === "viabilidad") statId = "viab"
+
+    const stat = realData?.stats?.find((s: any) => s.id === statId)
+    
+    if (kpi.id === "vitalidad") {
+      // Calcular vitalidad (Vigorosas - Muy Vigorosas - Débiles - Muertas)
+      // Usaremos los promedios si están disponibles, sino el último válido
+      let viab = 0;
+      let vigor = 0;
+      
+      const statViab = realData?.stats?.find((s: any) => s.id === "viab")
+      const statVigor = realData?.stats?.find((s: any) => s.id === "vigor")
+      
+      if (statViab && statVigor) {
+        viab = statViab.media
+        vigor = statVigor.media
+      } else {
+        const lastValid = [...propagationPoints].reverse().find(p => p.viabilidad > 0)
+        if (lastValid) {
+          viab = lastValid.viabilidad
+          vigor = lastValid.vigorosas
+        }
+      }
+      
+      const vigorosas = Math.max(0, viab - vigor).toFixed(0)
+      const muyVigorosas = Math.max(0, vigor).toFixed(0)
+      const debiles = Math.max(0, (100 - viab) * 0.6).toFixed(0)
+      const muertas = Math.max(0, (100 - viab) * 0.4).toFixed(0)
+      
+      val = `${vigorosas}-${muyVigorosas}-${debiles}-${muertas}`
+      
+    } else if (stat && stat.media !== undefined && stat.media !== null) {
+      // Usar el promedio de la tabla de capacidad (2 decimales para coincidir exactamente)
+      val = stat.media.toFixed(2)
+    } else {
+      // Fallback a los últimos datos (para cuando no hay stats globales)
+      if (kpi.id === "viabilidad") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.viabilidad > 0)
+        if (lastValid) val = lastValid.viabilidad.toFixed(1)
+      }
+      if (kpi.id === "conteo") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.conteo > 0)
+        if (lastValid) val = lastValid.conteo.toFixed(0)
+      }
+      if (kpi.id === "plato" || kpi.id === "plato_2") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.plato > 0)
+        if (lastValid) val = lastValid.plato.toFixed(2)
+      }
+      if (kpi.id === "ph") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.ph > 0)
+        if (lastValid) val = lastValid.ph.toFixed(2)
+      }
+      if (kpi.id === "aireacion") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.aireacion > 0)
+        if (lastValid) val = lastValid.aireacion.toFixed(1)
+      }
+      if (kpi.id === "zn") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.zn > 0)
+        if (lastValid) val = lastValid.zn.toFixed(2)
+      }
+      if (kpi.id === "temp") {
+        const lastValid = [...propagationPoints].reverse().find(p => p.temp > 0)
+        if (lastValid) val = lastValid.temp.toFixed(1)
+      }
     }
-    if (kpi.id === "vigorosas") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.vigorosas > 0)
-      if (lastValid) val = lastValid.vigorosas.toFixed(1)
-    }
-    if (kpi.id === "conteo") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.conteo > 0)
-      if (lastValid) val = lastValid.conteo.toFixed(0)
-    }
-    if (kpi.id === "plato") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.plato > 0)
-      if (lastValid) val = lastValid.plato.toFixed(2)
-    }
-    if (kpi.id === "ph") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.ph > 0)
-      if (lastValid) val = lastValid.ph.toFixed(2)
-    }
-    if (kpi.id === "temp") {
-      const lastValid = [...propagationPoints].reverse().find(p => p.temp > 0)
-      if (lastValid) val = lastValid.temp.toFixed(1)
-    }
+    
     return { ...kpi, value: val }
   })
+
+  const row1And2 = displayKpis.slice(0, 8)
+  const row3 = displayKpis.slice(8)
 
   const toggleFilter = (setter: any, current: string[], val: string) => {
     if (current.includes(val)) {
@@ -105,6 +160,7 @@ export function PropagationTab() {
   const [isOpenFechas, setIsOpenFechas] = useState(false)
   const [isOpenTipos, setIsOpenTipos] = useState(false)
   const [isOpenTanques, setIsOpenTanques] = useState(false)
+  const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
 
   return (
     <div className="flex flex-col gap-3">
@@ -271,28 +327,89 @@ export function PropagationTab() {
             </div>
           </div>
 
+          <div className="h-4 w-px bg-zinc-700 mx-1" />
+
+            <div className="flex items-center gap-2">
+              <label className="text-zinc-400 text-xs">Dobleteo:</label>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsOpenDobleteo(!isOpenDobleteo)} 
+                  className="bg-black border border-zinc-700 text-zinc-300 hover:border-yellow-500/50 text-xs rounded px-2 py-1 flex items-center justify-between min-w-[140px]"
+                >
+                  <span className="truncate">
+                    {filterDobleteo.length === 0 ? "Todos (Calberg, Antes...)" : filterDobleteo.join(", ")}
+                  </span>
+                  <span className="ml-2 text-[8px]">▼</span>
+                </button>
+                
+                {isOpenDobleteo && (
+                  <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-48 overflow-y-auto">
+                    {uniqueDobleteo.length === 0 && <span className="text-zinc-600 text-[10px]">Sin datos</span>}
+                    
+                    {uniqueDobleteo.length > 0 && (
+                      <label className="flex items-center gap-2 text-xs text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1 rounded border-b border-zinc-700 pb-2 mb-1">
+                        <input 
+                          type="checkbox" 
+                          className="accent-yellow-500"
+                          checked={filterDobleteo.length === 0} 
+                          onChange={() => setFilterDobleteo([])} 
+                        />
+                        (Todos)
+                      </label>
+                    )}
+
+                    {uniqueDobleteo.map(t => (
+                      <label key={t} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1 rounded">
+                        <input 
+                          type="checkbox" 
+                          className="accent-yellow-500"
+                          checked={filterDobleteo.length === 0 || filterDobleteo.includes(t)} 
+                          onChange={() => {
+                            if (filterDobleteo.length === 0) {
+                              setFilterDobleteo([t])
+                            } else {
+                              toggleFilter(setFilterDobleteo, filterDobleteo, t)
+                            }
+                          }} 
+                        />
+                        {t}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-2 h-fit">
           {displayKpis.map((kpi) => (
             <KpiCard key={kpi.id} kpi={kpi} />
           ))}
         </div>
-        <CapabilityTable onLocalUpdate={setRealData} stats={realData?.stats} lastUpdateGlobal={realData?.ultimaActualizacion} />
+        <div className="lg:col-span-6 h-full">
+          <CapabilityTable onLocalUpdate={setRealData} stats={realData?.stats} lastUpdateGlobal={realData?.ultimaActualizacion} dynamicData={hasData ? propagationPoints : undefined} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <ViabilityChart dynamicData={hasData ? propagationPoints : undefined} />
-        <VitalityCompositionChart dynamicData={hasData ? propagationPoints : undefined} />
-        <CorrelationScatterGrid dynamicData={hasData ? propagationPoints : undefined} />
+        <div className="lg:col-span-1 flex flex-col gap-3">
+          <ViabilityChart dynamicData={hasData ? propagationPoints : undefined} />
+          <CellCountChart dynamicData={hasData ? propagationPoints : undefined} />
+        </div>
+        <div className="lg:col-span-2 h-full">
+          <CorrelationScatterGrid dynamicData={hasData ? propagationPoints : undefined} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <CellCountChart dynamicData={hasData ? propagationPoints : undefined} />
-        <ProcessVariablesTable dynamicData={hasData ? propagationPoints : undefined} />
-        <ExecutiveReport stats={realData?.stats} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="lg:col-span-1">
+          <VitalityCompositionChart dynamicData={hasData ? propagationPoints : undefined} />
+        </div>
+        <div className="lg:col-span-1">
+          <ExecutiveReport stats={realData?.stats} />
+        </div>
       </div>
     </div>
   )

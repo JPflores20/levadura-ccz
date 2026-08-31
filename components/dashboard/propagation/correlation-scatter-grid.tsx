@@ -8,12 +8,16 @@ export function CorrelationScatterGrid({ dynamicData }: { dynamicData?: any[] })
   const data = dynamicData || scatterData;
 
   return (
-    <ExpandableCard title="Correlación: Variables Críticas vs % Células Vigorosas">
-      <div className="grid grid-cols-2 gap-2 h-52 w-full relative shrink-0">
-        <div className="h-24"><MetricScatterChart chartId="scat-plato" title="°P en Mosto vs % Vigorosas" data={data} xDataKey="plato" yDataKey="vigorosas" /></div>
-        <div className="h-24"><MetricScatterChart chartId="scat-ph" title="pH vs % Vigorosas" data={data} xDataKey="ph" yDataKey="vigorosas" /></div>
-        <div className="h-24"><MetricScatterChart chartId="scat-aire" title="Aireación vs % Vigorosas" data={data} xDataKey="aireacion" yDataKey="vigorosas" /></div>
-        <div className="h-24"><MetricScatterChart chartId="scat-zn" title="Zn vs % Vigorosas" data={data} xDataKey="zn" yDataKey="vigorosas" /></div>
+    <ExpandableCard 
+      title="Correlación: Variables Críticas vs Conteo Celular"
+      className="h-full"
+      contentClassName="flex-1 flex flex-col min-h-0"
+    >
+      <div className="grid grid-cols-2 grid-rows-2 gap-4 flex-1 w-full relative min-h-0">
+        <div className="min-h-0 w-full relative"><MetricScatterChart chartId="scat-plato-conteo" title="Conteo Celular vs °P en Mosto" data={data} xDataKey="plato" yDataKey="conteo" yDomain={[0, 150]} /></div>
+        <div className="min-h-0 w-full relative"><MetricScatterChart chartId="scat-viab-conteo" title="Conteo Celular vs Viabilidad (%)" data={data} xDataKey="viabilidad" yDataKey="conteo" yDomain={[0, 150]} /></div>
+        <div className="min-h-0 w-full relative"><MetricScatterChart chartId="scat-temp-conteo" title="Conteo Celular vs Temperatura (°C)" data={data} xDataKey="temp" yDataKey="conteo" yDomain={[0, 150]} /></div>
+        <div className="min-h-0 w-full relative"><MetricScatterChart chartId="scat-vig-conteo" title="Conteo Celular vs Vitalidad (%)" data={data} xDataKey="vigorosas" yDataKey="conteo" yDomain={[0, 150]} /></div>
       </div>
     </ExpandableCard>
   )

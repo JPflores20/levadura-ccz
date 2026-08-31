@@ -86,6 +86,30 @@ export function Comparacion4vTab() {
   const alcoholIsoamilicoData = prepareChartData("ISOAMILICO")
   const isobutanolData = prepareChartData("ISOBUTAN")
 
+  const diacetiloAcetaldehidoData = diacetiloData.map((d, i) => ({
+    vuelta: d.vuelta,
+    diac_ferm_A: d.fermentacionA,
+    diac_rep_A: d.reposoA,
+    diac_ferm_B: d.fermentacionB,
+    diac_rep_B: d.reposoB,
+    acet_ferm_A: acetaldehidoData[i].fermentacionA,
+    acet_rep_A: acetaldehidoData[i].reposoA,
+    acet_ferm_B: acetaldehidoData[i].fermentacionB,
+    acet_rep_B: acetaldehidoData[i].reposoB,
+  }))
+
+  const esteresAlcoholesData = esteresData.map((d, i) => ({
+    vuelta: d.vuelta,
+    est_ferm_A: d.fermentacionA,
+    est_rep_A: d.reposoA,
+    est_ferm_B: d.fermentacionB,
+    est_rep_B: d.reposoB,
+    alc_ferm_A: alcoholesData[i].fermentacionA,
+    alc_rep_A: alcoholesData[i].reposoA,
+    alc_ferm_B: alcoholesData[i].fermentacionB,
+    alc_rep_B: alcoholesData[i].reposoB,
+  }))
+
   const renderComparativeChart = (data: any[]) => (
     <ResponsiveContainer width="100%" height={350}>
       <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
@@ -95,13 +119,61 @@ export function Comparacion4vTab() {
         <Tooltip contentStyle={tooltipStyle.contentStyle} />
         <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
         
-        {/* Líneas Cultivo A */}
         <Line type="monotone" name={`Ferm. A (${cultivoA})`} dataKey="fermentacionA" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
         <Line type="monotone" name={`Reposo A`} dataKey="reposoA" stroke="#93c5fd" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
         
-        {/* Líneas Cultivo B */}
         <Line type="monotone" name={`Ferm. B (${cultivoB})`} dataKey="fermentacionB" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls />
         <Line type="monotone" name={`Reposo B`} dataKey="reposoB" stroke="#fca5a5" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+
+  const renderDiacAcetChart = (data: any[]) => (
+    <ResponsiveContainer width="100%" height={350}>
+      <LineChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+        <XAxis dataKey="vuelta" {...axisProps} label={{ value: 'Vuelta', position: 'insideBottom', offset: -10, fill: '#888' }} />
+        <YAxis yAxisId="left" domain={[200, 1000]} {...axisProps} label={{ value: 'Diacetilo (ppm)', angle: -90, position: 'insideLeft', fill: '#888', dy: 40, dx: -10 }} />
+        <YAxis yAxisId="right" orientation="right" domain={[0, 15]} {...axisProps} label={{ value: 'Acetaldehído (ppm)', angle: 90, position: 'insideRight', fill: '#888', dy: 40, dx: 10 }} />
+        <Tooltip contentStyle={tooltipStyle.contentStyle} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+        
+        {/* Diacetilo (Left Axis) - Colors: Blue/Red */}
+        <Line yAxisId="left" type="monotone" name={`Diac. Ferm A`} dataKey="diac_ferm_A" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Diac. Reposo A`} dataKey="diac_rep_A" stroke="#93c5fd" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Diac. Ferm B`} dataKey="diac_ferm_B" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Diac. Reposo B`} dataKey="diac_rep_B" stroke="#fca5a5" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+
+        {/* Acetaldehído (Right Axis) - Colors: Green/Yellow */}
+        <Line yAxisId="right" type="monotone" name={`Acet. Ferm A`} dataKey="acet_ferm_A" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Acet. Reposo A`} dataKey="acet_rep_A" stroke="#86efac" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Acet. Ferm B`} dataKey="acet_ferm_B" stroke="#eab308" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Acet. Reposo B`} dataKey="acet_rep_B" stroke="#fef08a" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+
+  const renderEstAlcChart = (data: any[]) => (
+    <ResponsiveContainer width="100%" height={350}>
+      <LineChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+        <XAxis dataKey="vuelta" {...axisProps} label={{ value: 'Vuelta', position: 'insideBottom', offset: -10, fill: '#888' }} />
+        <YAxis yAxisId="left" {...axisProps} label={{ value: 'Ésteres (ppm)', angle: -90, position: 'insideLeft', fill: '#888', dy: 40, dx: -10 }} />
+        <YAxis yAxisId="right" orientation="right" {...axisProps} label={{ value: 'Alcoholes (ppm)', angle: 90, position: 'insideRight', fill: '#888', dy: 40, dx: 10 }} />
+        <Tooltip contentStyle={tooltipStyle.contentStyle} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+        
+        {/* Esteres (Left Axis) */}
+        <Line yAxisId="left" type="monotone" name={`Est. Ferm A`} dataKey="est_ferm_A" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Est. Reposo A`} dataKey="est_rep_A" stroke="#93c5fd" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Est. Ferm B`} dataKey="est_ferm_B" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="left" type="monotone" name={`Est. Reposo B`} dataKey="est_rep_B" stroke="#fca5a5" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+
+        {/* Alcoholes (Right Axis) */}
+        <Line yAxisId="right" type="monotone" name={`Alc. Ferm A`} dataKey="alc_ferm_A" stroke="#a855f7" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Alc. Reposo A`} dataKey="alc_rep_A" stroke="#d8b4fe" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Alc. Ferm B`} dataKey="alc_ferm_B" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        <Line yAxisId="right" type="monotone" name={`Alc. Reposo B`} dataKey="alc_rep_B" stroke="#fdba74" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
       </LineChart>
     </ResponsiveContainer>
   )
@@ -138,16 +210,12 @@ export function Comparacion4vTab() {
 
       {/* Gráficas Empalmadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ExpandableCard title="Comparativa de Diacetilo (ppm)">
-          {renderComparativeChart(diacetiloData)}
+        <ExpandableCard title="Comparativa de Diacetilo y Acetaldehído" className="lg:col-span-2">
+          {renderDiacAcetChart(diacetiloAcetaldehidoData)}
         </ExpandableCard>
 
-        <ExpandableCard title="Comparativa de Acetaldehído (ppm)">
-          {renderComparativeChart(acetaldehidoData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Comparativa de Esteres Generales (ppm)">
-          {renderComparativeChart(esteresData)}
+        <ExpandableCard title="Comparativa de Ésteres y Alcoholes Generales" className="lg:col-span-2">
+          {renderEstAlcChart(esteresAlcoholesData)}
         </ExpandableCard>
 
         <ExpandableCard title="Comparativa de Acetato de Isoamilo (ppm)">
@@ -156,10 +224,6 @@ export function Comparacion4vTab() {
 
         <ExpandableCard title="Comparativa de Acetato de Etilo (ppm)">
           {renderComparativeChart(acetatoEtiloData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Comparativa de Alcoholes Generales (ppm)">
-          {renderComparativeChart(alcoholesData)}
         </ExpandableCard>
 
         <ExpandableCard title="Comparativa de Propanol (ppm)">

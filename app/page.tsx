@@ -33,19 +33,15 @@ export default function Page() {
               </TabsTrigger>
               <TabsTrigger value="comparacion" className="data-active:border-yellow-500/40">
                 <GitCompare data-icon="inline-start" className="text-yellow-500" />
-                Comparación
-              </TabsTrigger>
-              <TabsTrigger value="cultivo" className="data-active:border-yellow-500/40">
-                <FlaskConical data-icon="inline-start" className="text-yellow-500" />
-                Validación ABER
+                Comparación cultivos
               </TabsTrigger>
               <TabsTrigger value="cinetica-4v" className="data-active:border-yellow-500/40">
                 <LineChart data-icon="inline-start" className="text-yellow-500" />
-                Nueva Cinética 4/v
+                Cinéticas
               </TabsTrigger>
               <TabsTrigger value="comparacion-4v" className="data-active:border-yellow-500/40">
                 <BarChart3 data-icon="inline-start" className="text-yellow-500" />
-                Comparación 4/v
+                Comparación cinéticas
               </TabsTrigger>
             </TabsList>
           </div>
@@ -55,9 +51,6 @@ export default function Page() {
           </TabsContent>
           <TabsContent value="comparacion" className="mt-3">
             <ComparacionTab />
-          </TabsContent>
-          <TabsContent value="cultivo" className="mt-3">
-            <CultivoTab />
           </TabsContent>
           <TabsContent value="cinetica-4v" className="mt-3">
             <CineticaTab />

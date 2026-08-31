@@ -27,19 +27,21 @@ export async function POST(request: Request) {
     console.log(`¡Datos recibidos desde Excel! ${data.length} filas procesadas.`)
     
     // Arrays para guardar los valores
-    const viab: number[] = []
-    const ph: number[] = []
     const conteo: number[] = []
+    const viab: number[] = []
     const vigor: number[] = []
+    const solidos: number[] = []
     const plato: number[] = []
+    const temp: number[] = []
 
     // Extraer datos del payload enviado por el Excel
     data.forEach((row: any) => {
-      if (row.viab) viab.push(row.viab)
-      if (row.ph) ph.push(row.ph)
-      if (row.conteo) conteo.push(row.conteo)
-      if (row.vigor) vigor.push(row.vigor)
-      if (row.plato) plato.push(row.plato)
+      if (row.conteo !== undefined && !isNaN(row.conteo)) conteo.push(row.conteo)
+      if (row.viab !== undefined && !isNaN(row.viab)) viab.push(row.viab)
+      if (row.vigor !== undefined && !isNaN(row.vigor)) vigor.push(row.vigor)
+      if (row.solidos !== undefined && !isNaN(row.solidos)) solidos.push(row.solidos)
+      if (row.plato !== undefined && !isNaN(row.plato)) plato.push(row.plato)
+      if (row.temp !== undefined && !isNaN(row.temp)) temp.push(row.temp)
     })
 
     // Función auxiliar para calcular Media, Desviación, Cp y Cpk
@@ -67,13 +69,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Calcular estadísticas
+    // Calcular estadísticas en el orden exacto solicitado
     const results = [
-      calcStats(viab, 100, 95, "viab", "Viabilidad (%)"),
       calcStats(conteo, 260, 180, "conteo", "Conteo Celular (x10^6/mL)"),
-      calcStats(vigor, 100, 88, "vig", "% Células Vigorosas"),
-      calcStats(ph, 5.5, 4.0, "ph", "pH"),
-      calcStats(plato, 16, 8, "plato", "°P en Mosto (Plato)")
+      calcStats(viab, 100, 95, "viab", "Viabilidad (%)"),
+      calcStats(vigor, 100, 88, "vig", "Vitalidad (%)"),
+      calcStats(solidos, 18, 10, "solidos", "Porcentaje de Sólidos (%)"),
+      calcStats(plato, 16, 8, "plato", "°P en Mosto"),
+      calcStats(temp, 22, 18, "temp", "Temperatura del Tanque (°C)")
     ].filter(Boolean)
 
     // Guardar localmente en database.json para evitar errores de Firebase

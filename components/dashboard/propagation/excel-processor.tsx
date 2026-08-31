@@ -63,6 +63,20 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     const headers = rows[headerRowIndex]
     const dataRows = rows.slice(headerRowIndex + 1)
 
+    // Función para buscar en las primeras 10 filas por si los encabezados están muy separados
+    const findColumnIndex = (matchFn: (val: string) => boolean) => {
+      for (let r = 0; r < Math.min(rows.length, 10); r++) {
+        if (!rows[r]) continue
+        for (let c = 0; c < rows[r].length; c++) {
+          const val = rows[r][c]
+          if (val && matchFn(val.toString().trim())) {
+            return c
+          }
+        }
+      }
+      return -1
+    }
+
     // Índices de columnas (Ajustar dinámicamente según cabeceras)
     const idxPlato = headers.findIndex((h: string) => h && h.toString().trim() === "°P")
     const idxPh = headers.findIndex((h: string) => h && h.toString().trim() === "pH.")
@@ -73,6 +87,11 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     const idxFecha = headers.findIndex((h: string) => h && h.toString().includes("Fecha"))
     const idxTipoLev = headers.findIndex((h: string) => h && h.toString().includes("Tipo de Lev"))
     const idxTanque = headers.findIndex((h: string) => h && h.toString().trim() === "Tanque")
+    
+    let idxDobleteo = findColumnIndex((h) => h.toLowerCase().includes("doblete"))
+    if (idxDobleteo === -1) idxDobleteo = 19; // Columna T por defecto si falla la búsqueda
+    const idxSolidos = findColumnIndex((h) => h.toLowerCase().includes("% de solidos") || h.toLowerCase().includes("% de sólidos"))
+    const idxTemp = findColumnIndex((h) => h.toLowerCase().includes("temp.en tanque") || h.toLowerCase().includes("temp. en tanque") || h.toLowerCase().includes("temperatura"))
 
     // Buscar columnas de vitalidad flexiblemente
     const idxVigor = headers.findIndex((h: string) => h && h.toString().includes("Vigorosas") && !h.toString().includes("Muy"))
@@ -93,16 +112,22 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
         let tipoLevVal = idxTipoLev >= 0 ? row[idxTipoLev] : "General"
         let tanqueVal = idxTanque >= 0 ? row[idxTanque] : "N/A"
         tanqueVal = tanqueVal ? tanqueVal.toString() : "N/A"
+        
+        let dobleteoVal = idxDobleteo >= 0 ? row[idxDobleteo] : "N/A"
+        dobleteoVal = dobleteoVal ? dobleteoVal.toString() : "N/A"
 
         payload.push({
           fecha: fechaVal,
           tipoLev: tipoLevVal,
           tanque: tanqueVal,
+          dobleteo: dobleteoVal,
           plato: Number(row[idxPlato]) || 0,
           ph: Number(row[idxPh]) || 0,
           conteo: Number(row[idxConteo]) || 0,
           viab: viab,
-          vigor: totalVigor
+          vigor: totalVigor,
+          solidos: idxSolidos >= 0 ? (Number(row[idxSolidos]) || 0) : 0,
+          temp: idxTemp >= 0 ? (Number(row[idxTemp]) || 0) : 0
         })
       }
     })
