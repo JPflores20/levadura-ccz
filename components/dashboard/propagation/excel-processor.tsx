@@ -85,6 +85,7 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     
     // Filtros
     const idxFecha = headers.findIndex((h: string) => h && h.toString().includes("Fecha"))
+    const idxHora = headers.findIndex((h: string) => h && h.toString().includes("Hora"))
     const idxTipoLev = headers.findIndex((h: string) => h && h.toString().includes("Tipo de Lev"))
     const idxTanque = headers.findIndex((h: string) => h && h.toString().trim() === "Tanque")
     
@@ -108,7 +109,15 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
         const totalVigor = valVigor + valMuyVigor;
         
         let fechaVal = idxFecha >= 0 ? formatExcelDate(row[idxFecha]) : "N/A"
-        
+        let horaVal = idxHora >= 0 ? row[idxHora]?.toString() : "N/A"
+        if (horaVal !== "N/A" && !isNaN(Number(horaVal))) {
+          // Si Excel lo lee como fracción de día (ej. 0.5 = 12:00)
+          const totalMinutes = Math.round(Number(horaVal) * 24 * 60)
+          const hh = Math.floor(totalMinutes / 60).toString().padStart(2, '0')
+          const mm = (totalMinutes % 60).toString().padStart(2, '0')
+          horaVal = `${hh}:${mm}`
+        }
+
         let tipoLevVal = idxTipoLev >= 0 ? row[idxTipoLev] : "General"
         let tanqueVal = idxTanque >= 0 ? row[idxTanque] : "N/A"
         tanqueVal = tanqueVal ? tanqueVal.toString() : "N/A"
@@ -118,6 +127,7 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
 
         payload.push({
           fecha: fechaVal,
+          hora: horaVal,
           tipoLev: tipoLevVal,
           tanque: tanqueVal,
           dobleteo: dobleteoVal,

@@ -71,8 +71,8 @@ export function ComparacionTab() {
     const b = batchDataB[i]
     kineticsData.push({
       paso: `Muestra ${i + 1}`,
-      tooltipA: a ? a.fecha : null,
-      tooltipB: b ? b.fecha : null,
+      tooltipA: a ? `${a.fecha || ''} ${a.hora && a.hora !== 'N/A' ? a.hora : ''}`.trim() : null,
+      tooltipB: b ? `${b.fecha || ''} ${b.hora && b.hora !== 'N/A' ? b.hora : ''}`.trim() : null,
       viabA: a ? a.viab : null,
       viabB: b ? b.viab : null,
       conteoA: a ? a.conteo : null,
@@ -84,6 +84,28 @@ export function ComparacionTab() {
     })
   }
 
+  const CustomKineticsTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-[#1a1a1a] border border-zinc-700 p-3 rounded shadow-xl text-xs">
+          <p className="font-bold text-yellow-500 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => {
+            const isA = entry.dataKey.endsWith('A')
+            const timeLabel = isA ? data.tooltipA : data.tooltipB
+            return (
+              <div key={index} className="flex flex-col mb-1">
+                <span style={{ color: entry.color }} className="font-bold">{entry.name}: {entry.value}</span>
+                {timeLabel && <span className="text-zinc-400 text-[10px]">Fecha/Hora: {timeLabel}</span>}
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+    return null
+  }
+
   const CustomLineChart = ({ dataKeyA, dataKeyB, title, yAxisLabel }: { dataKeyA: string, dataKeyB: string, title: string, yAxisLabel: string }) => (
     <ExpandableCard title={title}>
       <ResponsiveContainer width="100%" height={300}>
@@ -91,7 +113,7 @@ export function ComparacionTab() {
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
           <XAxis dataKey="paso" {...axisProps} />
           <YAxis {...axisProps} label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', fill: '#888', dy: 40 }} />
-          <Tooltip contentStyle={tooltipStyle.contentStyle} />
+          <Tooltip content={<CustomKineticsTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
           <Line type="monotone" dataKey={dataKeyA} name={loteA?.label || "Cultivo A"} stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
           <Line type="monotone" dataKey={dataKeyB} name={loteB?.label || "Cultivo B"} stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} connectNulls />
