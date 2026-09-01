@@ -147,7 +147,7 @@ export function CineticaTab() {
               onChange={e => setFilterLote(e.target.value)}
               className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
             >
-              {uniqueLotes.length === 0 && <option value="TODOS">TODOS</option>}
+              <option value="TODOS">TODOS</option>
               {uniqueLotes.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </div>
