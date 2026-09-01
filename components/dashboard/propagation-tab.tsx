@@ -160,8 +160,6 @@ export function PropagationTab() {
     }
   }
 
-  const rawData = realData?.rawData || []
-  const hasData = rawData.length > 0
 
   const handleCapture = async () => {
     const element = document.getElementById('capture-dashboard');
