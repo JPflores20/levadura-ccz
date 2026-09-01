@@ -37,14 +37,14 @@ export function PropagationTab() {
   const uniqueFechas = Array.from(new Set(rawDataRaw.map((d: any) => d.fecha?.toString().trim()))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
   const uniqueTipos = Array.from(new Set(rawDataRaw.map((d: any) => d.tipoLev?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
   const uniqueTanques = Array.from(new Set(rawDataRaw.map((d: any) => d.tanque?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
-  const uniqueDobleteo = Array.from(new Set(rawDataRaw.map((d: any) => d.dobleteo?.toString().trim()))).filter(t => t) as string[]
+  const uniqueDobleteo = Array.from(new Set(rawDataRaw.map((d: any) => (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
 
   // Apply filters
   const rawData = rawDataRaw.filter((d: any) => {
     const dFecha = d.fecha?.toString().trim()
     const dTipo = d.tipoLev?.toString().trim().toUpperCase()
     const dTanque = d.tanque?.toString().trim().toUpperCase()
-    const dDobleteo = d.dobleteo?.toString().trim()
+    const dDobleteo = (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()
 
     if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
     if (filterTipos.length > 0 && !filterTipos.includes(dTipo)) return false

@@ -37,7 +37,8 @@ export async function POST(request: Request) {
     const rawKineticData = procesarCineticas(cineticas)
     const dataCineticas = {
       ultimaActualizacion: new Date().toISOString(),
-      rawData: rawKineticData
+      rawData: cineticas,
+      stats: rawKineticData
     }
     await setDoc(doc(firestoreDatabase, "dashboards", "kinetics_stats"), dataCineticas).catch(() => {})
     try { fs.writeFileSync(path.join(process.cwd(), 'database_kinetics.json'), JSON.stringify(dataCineticas, null, 2)) } catch(e){}

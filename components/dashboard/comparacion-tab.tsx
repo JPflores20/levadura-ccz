@@ -63,14 +63,71 @@ export function ComparacionTab() {
   const batchDataA = getBatchData(loteAId)
   const batchDataB = getBatchData(loteBId)
 
-  // Combinar los datos por índice para que Recharts pueda graficar dos líneas empalmadas
+  const parseTimestamp = (row: any) => {
+    if (!row) return null
+    let fVal = row.fecha || row.Fecha
+    let hVal = row.hora || row["Hora Inicio"]
+    let ms = 0
+    let isValid = false
+    
+    if (fVal) {
+      if (typeof fVal === 'number') {
+        ms = Math.round((fVal - 25569) * 86400 * 1000)
+        isValid = true
+      } else {
+        const d = new Date(fVal)
+        if (!isNaN(d.getTime())) {
+          ms = d.getTime()
+          isValid = true
+        }
+      }
+    }
+    
+    if (hVal && typeof hVal === 'number') {
+      ms += Math.round(hVal * 86400 * 1000)
+      isValid = true
+    } else if (hVal && typeof hVal === 'string') {
+      const parts = hVal.split(':')
+      if (parts.length >= 2) {
+        ms += (parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60) * 1000
+        isValid = true
+      }
+    }
+    return isValid ? ms : null
+  }
+
+  const getElapsedTime = (row: any, startMs: number | null, index: number) => {
+    if (!row) return null
+    if (row["Tiempo Total"] !== undefined) {
+      const tt = parseFloat(row["Tiempo Total"])
+      if (!isNaN(tt)) return tt
+    }
+    const currentMs = parseTimestamp(row)
+    if (currentMs !== null && startMs !== null) {
+      return Math.max(0, (currentMs - startMs) / 3600000) // horas
+    }
+    return index * 12 // fallback generico si no hay fechas
+  }
+
+  const startMsA = batchDataA.length > 0 ? parseTimestamp(batchDataA[0]) : null
+  const startMsB = batchDataB.length > 0 ? parseTimestamp(batchDataB[0]) : null
+
+  // Combinar los datos por índice
   const maxLen = Math.max(batchDataA.length, batchDataB.length)
   const kineticsData = []
+  
   for (let i = 0; i < maxLen; i++) {
     const a = batchDataA[i]
     const b = batchDataB[i]
+    
+    const timeA = getElapsedTime(a, startMsA, i)
+    const timeB = getElapsedTime(b, startMsB, i)
+    
+    // El eje X representará el tiempo de la Muestra A si existe, si no el de la B
+    const displayTime = timeA !== null ? timeA : timeB
+    
     kineticsData.push({
-      paso: `Muestra ${i + 1}`,
+      paso: displayTime !== null ? `${displayTime.toFixed(1)}h` : `Muestra ${i + 1}`,
       tooltipA: a ? `${a.fecha || ''} ${a.hora && a.hora !== 'N/A' ? a.hora : ''}`.trim() : null,
       tooltipB: b ? `${b.fecha || ''} ${b.hora && b.hora !== 'N/A' ? b.hora : ''}`.trim() : null,
       viabA: a ? a.viab : null,
@@ -89,14 +146,14 @@ export function ComparacionTab() {
       const data = payload[0].payload
       return (
         <div className="bg-[#1a1a1a] border border-zinc-700 p-3 rounded shadow-xl text-xs">
-          <p className="font-bold text-yellow-500 mb-2">{label}</p>
+          <p className="font-bold text-yellow-500 mb-2">Tiempo: {label}</p>
           {payload.map((entry: any, index: number) => {
             const isA = entry.dataKey.endsWith('A')
             const timeLabel = isA ? data.tooltipA : data.tooltipB
             return (
               <div key={index} className="flex flex-col mb-1">
                 <span style={{ color: entry.color }} className="font-bold">{entry.name}: {entry.value}</span>
-                {timeLabel && <span className="text-zinc-400 text-[10px]">Fecha/Hora: {timeLabel}</span>}
+                {timeLabel && <span className="text-zinc-400 text-[10px]">Origen: {timeLabel}</span>}
               </div>
             )
           })}

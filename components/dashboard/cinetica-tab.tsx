@@ -4,152 +4,287 @@ import { ExcelProcessorKinetics } from "./kinetics/excel-processor-kinetics"
 import useSWR from 'swr'
 import { ExpandableCard } from "./expandable-card"
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
-import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
+import { CHART_COLORS, axisProps } from "@/lib/chart-config"
+import { Gauge, Beaker, Thermometer, Clock, Wind, Activity, Percent, Sprout } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function CineticaTab() {
-  // SWR guarda automáticamente en caché. Al quitar el refreshInterval, evitamos consultas innecesarias.
-  // Solo volverá a consultar si el usuario cambia de pestaña y regresa, o recarga la página.
   const { data: dbData } = useSWR('/api/get-kinetics', fetcher, { 
     revalidateOnFocus: true,
-    dedupingInterval: 60000 // Cachea por 1 minuto mínimo
+    dedupingInterval: 60000 
   })
   const rawData = dbData?.rawData || []
 
-  const uniqueCepas = Array.from(new Set(rawData.map((d: any) => d.cepa?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
-  const uniqueLotes = Array.from(new Set(rawData.map((d: any) => d.propagacion?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+  // Extraction robusta de Cepas e Items
+  const uniqueCepas = Array.from(new Set(rawData.map((d: any) => (d.Marca || d.cepa)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+  const uniqueLotes = Array.from(new Set(rawData.map((d: any) => (d.Item || d.propagacion || d.Lote)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
 
   const [filterCepa, setFilterCepa] = useState<string>("TODAS")
-  const [filterLote, setFilterLote] = useState<string>("TODOS")
+  const [filterLote, setFilterLote] = useState<string>(uniqueLotes.length > 0 ? uniqueLotes[0] : "TODOS")
 
   const filteredData = rawData.filter((d: any) => {
-    const cepa = d.cepa?.toString().trim().toUpperCase()
-    const lote = d.propagacion?.toString().trim().toUpperCase()
+    const cepa = (d.Marca || d.cepa)?.toString().trim().toUpperCase()
+    const lote = (d.Item || d.propagacion || d.Lote)?.toString().trim().toUpperCase()
     if (filterCepa !== "TODAS" && cepa !== filterCepa) return false
     if (filterLote !== "TODOS" && lote !== filterLote) return false
     return true
   })
 
-  // Group by Volatil (Diacetilo / Acetaldehido)
-  const prepareChartData = (volatilName: string) => {
-    const chartData = []
-    const normalizedVolatilName = volatilName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
-    
-    for (let i = 0; i <= 10; i++) {
-      const point: any = { vuelta: i.toString() }
-      
-      const fermRows = filteredData.filter((d: any) => {
-        const v = (d.volatil || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
-        return v.includes(normalizedVolatilName) && (d.etapa || "").toString().toUpperCase().includes("FERM")
-      })
-      const repoRows = filteredData.filter((d: any) => {
-        const v = (d.volatil || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
-        return v.includes(normalizedVolatilName) && (d.etapa || "").toString().toUpperCase().includes("REP")
-      })
-      
-      const fermAvg = fermRows.reduce((acc: number, r: any) => acc + (r.vueltas?.[i] || 0), 0) / (fermRows.length || 1)
-      const repoAvg = repoRows.reduce((acc: number, r: any) => acc + (r.vueltas?.[i] || 0), 0) / (repoRows.length || 1)
-
-      point.fermentacion = fermRows.length > 0 ? fermAvg : null
-      point.reposo = repoRows.length > 0 ? repoAvg : null
-
-      chartData.push(point)
+  // Helpers de extraccion de Excel
+  const getValFirst = (rows: any[], keywords: string[]): number => {
+    for (let row of rows) {
+      if (!row) continue
+      for (let kw of keywords) {
+        const kwClean = kw.toLowerCase().replace(/\s+/g,'')
+        const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s+/g,'').includes(kwClean))
+        if (key && row[key] !== undefined && row[key] !== "") {
+          const val = parseFloat(row[key])
+          if (!isNaN(val)) return val
+        }
+      }
     }
-    return chartData
+    return 0
   }
 
-  const diacetiloData = prepareChartData("DIACETILO")
-  const acetaldehidoData = prepareChartData("ACETALDEHIDO")
-  const esteresData = prepareChartData("ESTERES")
-  const acetatoIsoamiloData = prepareChartData("ISOAMILO")
-  const acetatoEtiloData = prepareChartData("ETILO")
-  const alcoholesData = prepareChartData("ALCOHOLES")
-  const propanolData = prepareChartData("PROPANOL")
-  const alcoholIsoamilicoData = prepareChartData("ISOAMILICO")
-  const isobutanolData = prepareChartData("ISOBUTAN")
+  const getValSingle = (row: any, keywords: string[]): number => {
+    if (!row) return 0
+    for (let kw of keywords) {
+      const kwClean = kw.toLowerCase().replace(/\s+/g,'')
+      const key = Object.keys(row).find(k => k.toLowerCase().replace(/\s+/g,'').includes(kwClean))
+      if (key && row[key] !== undefined && row[key] !== "") {
+        const val = parseFloat(row[key])
+        if (!isNaN(val)) return val
+      }
+    }
+    return 0
+  }
 
-  const renderLineChart = (data: any[]) => (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-        <XAxis dataKey="vuelta" {...axisProps} label={{ value: 'Vuelta', position: 'insideBottom', offset: -10, fill: '#888' }} />
-        <YAxis {...axisProps} />
-        <Tooltip contentStyle={tooltipStyle.contentStyle} />
-        <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-        <Line type="monotone" name="Fermentación" dataKey="fermentacion" stroke={CHART_COLORS.blue} strokeWidth={2} dot={{ r: 4 }} connectNulls />
-        <Line type="monotone" name="Reposo" dataKey="reposo" stroke={CHART_COLORS.yellow} strokeWidth={2} dot={{ r: 4 }} connectNulls />
-      </LineChart>
-    </ResponsiveContainer>
-  )
+  // 1. Tarjetas de inicio de fermentación
+  const kpiData = [
+    { label: "% Glucosa", value: getValFirst(filteredData, ["Glucosa"]), unit: "%", icon: Percent },
+    { label: "FAN Mosto", value: getValFirst(filteredData, ["FAN Mosto"]), unit: "mg/L", icon: Beaker },
+    { label: "E.L", value: getValFirst(filteredData, ["E.L", "Extracto Limite"]), unit: "°P", icon: Gauge },
+    { label: "Conteo Llenado", value: getValFirst(filteredData, ["Conteo de Celulas", "Conteo"]), unit: "x10^6", icon: Sprout },
+    { label: "Temp Llenado", value: getValFirst(filteredData, ["Temperatura de Llenado"]), unit: "°C", icon: Thermometer },
+    { label: "Tiempo Llenado", value: getValFirst(filteredData, ["Tiempo de Llenado"]), unit: "h", icon: Clock },
+    { label: "Aireación", value: getValFirst(filteredData, ["Aireacion"]), unit: "kg/hl", icon: Wind },
+    { label: "Temp Almacenaje", value: getValFirst(filteredData, ["Temperatura de Almacenamiento", "Almacenamiento"]), unit: "°C", icon: Thermometer },
+    { label: "Tiempo Almacenaje", value: getValFirst(filteredData, ["Tiempo de Almacenamiento"]), unit: "h", icon: Clock },
+    { label: "Viabilidad", value: getValFirst(filteredData, ["Viabilidad Primera", "Viabilidad Primer", "Viabilidad"]), unit: "%", icon: Activity },
+    { label: "Vitalidad", value: getValFirst(filteredData, ["Vitalidad", "Celulas Vigorosas"]), unit: "%", icon: Activity }
+  ]
+
+  // 2. Tabla de Capacidad de Proceso
+  const compoundsTable = [
+    { id: "esteres", name: "Ésteres", keys: ["Esteres", "Ésteres"] },
+    { id: "alcoholes", name: "Alcoholes Superiores", keys: ["Alcoholes Superiores", "Alcoholes"] },
+    { id: "diacetilo", name: "Diacetilo", keys: ["Diacetilo"] },
+    { id: "acetaldehido", name: "Acetaldehído", keys: ["Acetaldehido"] },
+    { id: "dms", name: "DMS", keys: ["DMS"] },
+    { id: "acetatoEtilo", name: "Acetato de Etilo", keys: ["Acetato de etilo"] },
+    { id: "acetatoIsoamilo", name: "Acetato de Isoamilo", keys: ["Acetato de isoamilo", "Acetato de isoamil"] },
+    { id: "propanol", name: "Propanol", keys: ["Propanol"] },
+    { id: "isobutanol", name: "Isobutanol", keys: ["Isobutaol", "Isobutanol"] },
+    { id: "isoamilico", name: "Alcohol Isoamílico", keys: ["Isoamil alcohol", "Alcohol isoamilico"] }
+  ]
+
+  const tableData = compoundsTable.map(comp => {
+    const vals = filteredData.map((d: any) => getValSingle(d, comp.keys)).filter(v => v > 0)
+    return {
+      name: comp.name,
+      avg: vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : "0",
+      min: vals.length ? Math.min(...vals).toFixed(2) : "0",
+      max: vals.length ? Math.max(...vals).toFixed(2) : "0",
+      last: vals.length ? vals[vals.length-1].toFixed(2) : "0"
+    }
+  })
+
+  // 3. Preparación de datos para gráficos
+  const graphData = filteredData.map((row: any, i: number) => {
+    return {
+      paso: `Muestra ${i+1}`,
+      acetaldehido: getValSingle(row, ["Acetaldehido"]),
+      diacetilo: getValSingle(row, ["Diacetilo"]),
+      esteres: getValSingle(row, ["Esteres", "Ésteres"]),
+      alcoholes: getValSingle(row, ["Alcoholes Superiores"]),
+      acetatoEtilo: getValSingle(row, ["Acetato de etilo"]),
+      acetatoIsoamilo: getValSingle(row, ["Acetato de isoamilo"]),
+      isobutanol: getValSingle(row, ["Isobutaol", "Isobutanol"]),
+      propanol: getValSingle(row, ["Propanol"]),
+      isoamilico: getValSingle(row, ["Isoamil alcohol", "Alcohol isoamilico"])
+    }
+  })
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[#1a1a1a] border border-zinc-700 p-3 rounded shadow-xl text-xs">
+          <p className="font-bold text-yellow-500 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex flex-col mb-1">
+              <span style={{ color: entry.color }} className="font-bold">{entry.name}: {entry.value}</span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3">
+    <div className="flex flex-col gap-4">
+      {/* Selector */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 shadow-lg">
         <ExcelProcessorKinetics />
-        
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs uppercase">Cepa:</label>
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Lote (Item):</label>
+            <select 
+              value={filterLote}
+              onChange={e => setFilterLote(e.target.value)}
+              className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
+            >
+              {uniqueLotes.length === 0 && <option value="TODOS">TODOS</option>}
+              {uniqueLotes.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Cepa (Marca):</label>
             <select 
               value={filterCepa}
               onChange={e => setFilterCepa(e.target.value)}
-              className="bg-black border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1 outline-none"
+              className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
             >
               <option value="TODAS">TODAS</option>
               {uniqueCepas.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs uppercase">Lote (Propagación):</label>
-            <select 
-              value={filterLote}
-              onChange={e => setFilterLote(e.target.value)}
-              className="bg-black border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1 outline-none"
-            >
-              <option value="TODOS">TODOS</option>
-              {uniqueLotes.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Lado Izquierdo: Tarjetas KPI */}
+        <div className="lg:col-span-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3">
+          <div className="col-span-full border-b border-yellow-500/30 pb-2 mb-2">
+            <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Inicio de Fermentación</h3>
+          </div>
+          {kpiData.map((kpi, idx) => {
+            const Icon = kpi.icon
+            return (
+              <div key={idx} className="bg-[#121212] border border-zinc-800 rounded-lg p-3 shadow-sm flex flex-col justify-between hover:border-yellow-500/30 transition-colors">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{kpi.label}</span>
+                  <Icon className="w-4 h-4 text-zinc-600" />
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-xl font-bold text-zinc-100">{kpi.value || "-"}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">{kpi.unit}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Lado Derecho: Tabla de Capacidad de Proceso */}
+        <div className="lg:col-span-2 flex flex-col gap-3">
+          <div className="border-b border-blue-500/30 pb-2 mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Capacidad de Proceso de la Fermentación</h3>
+          </div>
+          <div className="bg-[#121212] border border-zinc-800 rounded-lg overflow-hidden shadow-lg text-sm">
+            <table className="w-full text-left">
+              <thead className="bg-[#1a1a1a] border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-400">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Parámetro</th>
+                  <th className="px-4 py-3 font-semibold text-right">Mínimo</th>
+                  <th className="px-4 py-3 font-semibold text-right">Promedio</th>
+                  <th className="px-4 py-3 font-semibold text-right">Máximo</th>
+                  <th className="px-4 py-3 font-semibold text-right text-yellow-500">Valor Final</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50">
+                {tableData.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-4 py-2.5 font-medium text-zinc-200">{row.name}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.min}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-blue-400 font-bold">{row.avg}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.max}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-yellow-400 font-bold bg-yellow-500/5">{row.last}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <ExpandableCard title="Evolución de Diacetilo por Vuelta (ppm)">
-          {renderLineChart(diacetiloData)}
+      <div className="border-b border-yellow-500/40 pb-2 mt-4">
+        <h2 className="text-sm font-bold text-yellow-500 tracking-widest">EVOLUCIÓN CINÉTICA</h2>
+      </div>
+
+      {/* 4 Gráficos Combinados */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <ExpandableCard title="Cinética de Acetaldehído y Diacetilo">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+              <XAxis dataKey="paso" {...axisProps} />
+              {/* Eje Y 1 (Izquierdo) */}
+              <YAxis yAxisId="left" {...axisProps} orientation="left" stroke={CHART_COLORS.blue} />
+              {/* Eje Y 2 (Derecho) */}
+              <YAxis yAxisId="right" {...axisProps} orientation="right" stroke={CHART_COLORS.yellow} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+              <Line yAxisId="left" type="monotone" name="Acetaldehído" dataKey="acetaldehido" stroke={CHART_COLORS.blue} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line yAxisId="right" type="monotone" name="Diacetilo Total" dataKey="diacetilo" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </ExpandableCard>
 
-        <ExpandableCard title="Evolución de Acetaldehído por Vuelta (ppm)">
-          {renderLineChart(acetaldehidoData)}
+        <ExpandableCard title="Ésteres y Alcoholes Superiores">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+              <XAxis dataKey="paso" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+              <Line type="monotone" name="Ésteres Generales" dataKey="esteres" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Alcoholes Superiores" dataKey="alcoholes" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </ExpandableCard>
 
-        <ExpandableCard title="Esteres Generales por Vuelta (ppm)">
-          {renderLineChart(esteresData)}
+        <ExpandableCard title="Acetato de Etilo e Isoamilo">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+              <XAxis dataKey="paso" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+              <Line type="monotone" name="Acetato de Etilo" dataKey="acetatoEtilo" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Acetato de Isoamilo" dataKey="acetatoIsoamilo" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </ExpandableCard>
 
-        <ExpandableCard title="Acetato de Isoamilo por Vuelta (ppm)">
-          {renderLineChart(acetatoIsoamiloData)}
+        <ExpandableCard title="Alcoholes Secundarios">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+              <XAxis dataKey="paso" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+              <Line type="monotone" name="Isobutanol" dataKey="isobutanol" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Propanol" dataKey="propanol" stroke="#a855f7" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Alcohol Isoamílico" dataKey="isoamilico" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </ExpandableCard>
 
-        <ExpandableCard title="Acetato de Etilo por Vuelta (ppm)">
-          {renderLineChart(acetatoEtiloData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Alcoholes Generales por Vuelta (ppm)">
-          {renderLineChart(alcoholesData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Propanol por Vuelta (ppm)">
-          {renderLineChart(propanolData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Alcohol Isoamílico por Vuelta (ppm)">
-          {renderLineChart(alcoholIsoamilicoData)}
-        </ExpandableCard>
-
-        <ExpandableCard title="Isobutanol por Vuelta (ppm)">
-          {renderLineChart(isobutanolData)}
-        </ExpandableCard>
       </div>
     </div>
   )
