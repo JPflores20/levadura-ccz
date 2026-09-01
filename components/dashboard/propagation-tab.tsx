@@ -6,6 +6,9 @@ import { CapabilityTable } from "./propagation/capability-table"
 import { ViabilityChart } from "./propagation/viability-chart"
 import { VitalityCompositionChart } from "./propagation/vitality-composition-chart"
 import { CorrelationScatterGrid } from "./propagation/correlation-scatter-grid"
+import { CultureSummaryColumn } from "./comparison/culture-summary-column"
+import html2canvas from 'html2canvas'
+import { Camera } from 'lucide-react'
 import { CellCountChart } from "./propagation/cell-count-chart"
 import { ExecutiveReport } from "./propagation/executive-report"
 import { formatExcelDate } from "@/lib/utils"
@@ -162,11 +165,39 @@ export function PropagationTab() {
   const [isOpenTanques, setIsOpenTanques] = useState(false)
   const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
 
+  const handleCapture = async () => {
+    const element = document.getElementById('capture-dashboard');
+    if (!element) return;
+    try {
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0a0a0a',
+        scale: 2
+      });
+      const data = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = data;
+      link.download = `Reporte-Propagacion-${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg" id="capture-dashboard">
       <div className="flex justify-between items-center bg-[#121212] border border-yellow-500/20 rounded-md p-2">
-        <div className="text-yellow-500 text-xs font-bold uppercase tracking-wider">
-          Filtros de Lote
+        <div className="flex items-center gap-4">
+          <div className="text-yellow-500 text-xs font-bold uppercase tracking-wider">
+            Filtros de Lote
+          </div>
+          <button 
+            onClick={handleCapture}
+            className="flex items-center gap-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold"
+            title="Capturar pantalla del dashboard"
+          >
+            <Camera size={12} />
+            Captura
+          </button>
         </div>
         <div className="flex gap-4">
           
