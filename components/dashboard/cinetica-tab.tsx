@@ -183,29 +183,31 @@ export function CineticaTab() {
           <div className="border-b border-blue-500/30 pb-2 mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Capacidad de Proceso de la Fermentación</h3>
           </div>
-          <div className="bg-[#121212] border border-zinc-800 rounded-lg overflow-hidden shadow-lg text-sm">
-            <table className="w-full text-left">
-              <thead className="bg-[#1a1a1a] border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-400">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Parámetro</th>
-                  <th className="px-4 py-3 font-semibold text-right">Mínimo</th>
-                  <th className="px-4 py-3 font-semibold text-right">Promedio</th>
-                  <th className="px-4 py-3 font-semibold text-right">Máximo</th>
-                  <th className="px-4 py-3 font-semibold text-right text-yellow-500">Valor Final</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
-                {tableData.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-4 py-2.5 font-medium text-zinc-200">{row.name}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.min}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-blue-400 font-bold">{row.avg}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.max}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-yellow-400 font-bold bg-yellow-500/5">{row.last}</td>
+          <div className="bg-[#121212] border border-zinc-800 rounded-lg shadow-lg text-sm overflow-hidden flex flex-col">
+            <div className="overflow-y-auto max-h-[240px] custom-scrollbar">
+              <table className="w-full text-left relative">
+                <thead className="bg-[#1a1a1a] border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-400 sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Parámetro</th>
+                    <th className="px-4 py-3 font-semibold text-right">Mínimo</th>
+                    <th className="px-4 py-3 font-semibold text-right">Promedio</th>
+                    <th className="px-4 py-3 font-semibold text-right">Máximo</th>
+                    <th className="px-4 py-3 font-semibold text-right text-yellow-500">Valor Final</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50">
+                  {tableData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-zinc-200">{row.name}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.min}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-blue-400 font-bold">{row.avg}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{row.max}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-yellow-400 font-bold bg-yellow-500/5">{row.last}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
