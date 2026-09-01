@@ -115,7 +115,7 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
         </div>
         <ExcelProcessor onDataProcessed={handleLocalUpload} />
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
+      <CardContent className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
          <Table className="text-[10px]">
           <TableHeader>
             <TableRow className="border-zinc-800 hover:bg-transparent">
