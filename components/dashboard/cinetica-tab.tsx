@@ -245,7 +245,7 @@ export function CineticaTab() {
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
               <Line type="monotone" name="Ésteres Generales" dataKey="esteres" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Alcoholes Superiores" dataKey="alcoholes" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Alcoholes Superiores" dataKey="alcoholes" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </ExpandableCard>
@@ -273,7 +273,7 @@ export function CineticaTab() {
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
               <Line type="monotone" name="Isobutanol" dataKey="isobutanol" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Propanol" dataKey="propanol" stroke="#a855f7" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              <Line type="monotone" name="Propanol" dataKey="propanol" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
               <Line type="monotone" name="Alcohol Isoamílico" dataKey="isoamilico" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
