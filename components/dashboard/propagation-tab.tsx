@@ -157,6 +157,9 @@ export function PropagationTab() {
       setter(current.filter(v => v !== val))
     } else {
       setter([...current, val])
+    }
+  }
+
   const rawData = realData?.rawData || []
   const hasData = rawData.length > 0
 
