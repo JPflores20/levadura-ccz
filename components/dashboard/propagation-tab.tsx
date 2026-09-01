@@ -7,7 +7,7 @@ import { ViabilityChart } from "./propagation/viability-chart"
 import { VitalityCompositionChart } from "./propagation/vitality-composition-chart"
 import { CorrelationScatterGrid } from "./propagation/correlation-scatter-grid"
 import { CultureSummaryColumn } from "./comparison/culture-summary-column"
-import html2canvas from 'html2canvas'
+import * as htmlToImage from 'html-to-image'
 import { Camera } from 'lucide-react'
 import { CellCountChart } from "./propagation/cell-count-chart"
 import { ExecutiveReport } from "./propagation/executive-report"
@@ -157,6 +157,23 @@ export function PropagationTab() {
       setter(current.filter(v => v !== val))
     } else {
       setter([...current, val])
+  const rawData = realData?.rawData || []
+  const hasData = rawData.length > 0
+
+  const handleCapture = async () => {
+    const element = document.getElementById('capture-dashboard');
+    if (!element) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(element, {
+        backgroundColor: '#0a0a0a',
+        pixelRatio: 2
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `Reporte-Propagacion-${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e) {
+      console.error(e);
     }
   }
 
@@ -164,24 +181,6 @@ export function PropagationTab() {
   const [isOpenTipos, setIsOpenTipos] = useState(false)
   const [isOpenTanques, setIsOpenTanques] = useState(false)
   const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
-
-  const handleCapture = async () => {
-    const element = document.getElementById('capture-dashboard');
-    if (!element) return;
-    try {
-      const canvas = await html2canvas(element, {
-        backgroundColor: '#0a0a0a',
-        scale: 2
-      });
-      const data = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = data;
-      link.download = `Reporte-Propagacion-${new Date().toISOString().split('T')[0]}.png`;
-      link.click();
-    } catch (e) {
-      console.error(e);
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg" id="capture-dashboard">
