@@ -2,10 +2,10 @@
 import React, { useState } from "react"
 import { ExcelProcessorKinetics } from "./kinetics/excel-processor-kinetics"
 import useSWR from 'swr'
+import { KpiCard } from "./kpi-card"
 import { ExpandableCard } from "./expandable-card"
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
 import { CHART_COLORS, axisProps } from "@/lib/chart-config"
-import { Gauge, Beaker, Thermometer, Clock, Wind, Activity, Percent, Sprout } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -60,19 +60,21 @@ export function CineticaTab() {
     return 0
   }
 
+  const formatKpi = (val: number) => val === 0 ? "-" : val.toString()
+
   // 1. Tarjetas de inicio de fermentación
   const kpiData = [
-    { label: "% Glucosa", value: getValFirst(filteredData, ["Glucosa"]), unit: "%", icon: Percent },
-    { label: "FAN Mosto", value: getValFirst(filteredData, ["FAN Mosto"]), unit: "mg/L", icon: Beaker },
-    { label: "E.L", value: getValFirst(filteredData, ["E.L", "Extracto Limite"]), unit: "°P", icon: Gauge },
-    { label: "Conteo Llenado", value: getValFirst(filteredData, ["Conteo de Celulas", "Conteo"]), unit: "x10^6", icon: Sprout },
-    { label: "Temp Llenado", value: getValFirst(filteredData, ["Temperatura de Llenado"]), unit: "°C", icon: Thermometer },
-    { label: "Tiempo Llenado", value: getValFirst(filteredData, ["Tiempo de Llenado"]), unit: "h", icon: Clock },
-    { label: "Aireación", value: getValFirst(filteredData, ["Aireacion"]), unit: "kg/hl", icon: Wind },
-    { label: "Temp Almacenaje", value: getValFirst(filteredData, ["Temperatura de Almacenamiento", "Almacenamiento"]), unit: "°C", icon: Thermometer },
-    { label: "Tiempo Almacenaje", value: getValFirst(filteredData, ["Tiempo de Almacenamiento"]), unit: "h", icon: Clock },
-    { label: "Viabilidad", value: getValFirst(filteredData, ["Viabilidad Primera", "Viabilidad Primer", "Viabilidad"]), unit: "%", icon: Activity },
-    { label: "Vitalidad", value: getValFirst(filteredData, ["Vitalidad", "Celulas Vigorosas"]), unit: "%", icon: Activity }
+    { id: "glucosa", label: "% Glucosa", value: formatKpi(getValFirst(filteredData, ["Glucosa"])), unit: "%", icon: "Percent", status: "ok" },
+    { id: "fan", label: "FAN Mosto", value: formatKpi(getValFirst(filteredData, ["FAN Mosto"])), unit: "mg/L", icon: "FlaskConical", status: "ok" },
+    { id: "el", label: "E.L", value: formatKpi(getValFirst(filteredData, ["E.L", "Extracto Limite"])), unit: "°P", icon: "Gauge", status: "ok" },
+    { id: "conteo", label: "Conteo Llenado", value: formatKpi(getValFirst(filteredData, ["Conteo de Celulas", "Conteo"])), unit: "x10^6", icon: "Activity", status: "ok" },
+    { id: "temp", label: "Temp Llenado", value: formatKpi(getValFirst(filteredData, ["Temperatura de Llenado"])), unit: "°C", icon: "Thermometer", status: "ok" },
+    { id: "tiempo", label: "Tiempo Llenado", value: formatKpi(getValFirst(filteredData, ["Tiempo de Llenado"])), unit: "h", icon: "Clock", status: "ok" },
+    { id: "aireacion", label: "Aireación", value: formatKpi(getValFirst(filteredData, ["Aireacion"])), unit: "kg/hl", icon: "Wind", status: "ok" },
+    { id: "tempAlm", label: "Temp Almacenaje", value: formatKpi(getValFirst(filteredData, ["Temperatura de Almacenamiento", "Almacenamiento"])), unit: "°C", icon: "Thermometer", status: "ok" },
+    { id: "tiempoAlm", label: "Tiempo Almacenaje", value: formatKpi(getValFirst(filteredData, ["Tiempo de Almacenamiento"])), unit: "h", icon: "Clock", status: "ok" },
+    { id: "viab", label: "Viabilidad", value: formatKpi(getValFirst(filteredData, ["Viabilidad Primera", "Viabilidad Primer", "Viabilidad"])), unit: "%", icon: "Activity", status: "ok" },
+    { id: "vitalidad", label: "Vitalidad", value: formatKpi(getValFirst(filteredData, ["Vitalidad", "Celulas Vigorosas"])), unit: "%", icon: "Activity", status: "ok" }
   ]
 
   // 2. Tabla de Capacidad de Proceso
@@ -163,31 +165,21 @@ export function CineticaTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Lado Izquierdo: Tarjetas KPI */}
-        <div className="lg:col-span-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-3">
-          <div className="col-span-full border-b border-yellow-500/30 pb-2 mb-2">
+        <div className="lg:col-span-6 flex flex-col gap-3">
+          <div className="border-b border-yellow-500/30 pb-2 mb-2">
             <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Inicio de Fermentación</h3>
           </div>
-          {kpiData.map((kpi, idx) => {
-            const Icon = kpi.icon
-            return (
-              <div key={idx} className="bg-[#121212] border border-zinc-800 rounded-lg p-3 shadow-sm flex flex-col justify-between hover:border-yellow-500/30 transition-colors">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{kpi.label}</span>
-                  <Icon className="w-4 h-4 text-zinc-600" />
-                </div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-xl font-bold text-zinc-100">{kpi.value || "-"}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">{kpi.unit}</span>
-                </div>
-              </div>
-            )
-          })}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 h-fit">
+            {kpiData.map((kpi, idx) => (
+              <KpiCard key={idx} kpi={kpi as any} />
+            ))}
+          </div>
         </div>
 
         {/* Lado Derecho: Tabla de Capacidad de Proceso */}
-        <div className="lg:col-span-2 flex flex-col gap-3">
+        <div className="lg:col-span-6 flex flex-col gap-3">
           <div className="border-b border-blue-500/30 pb-2 mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Capacidad de Proceso de la Fermentación</h3>
           </div>
