@@ -4,6 +4,8 @@ import React, { useState } from "react"
 import useSWR from 'swr'
 import { Activity, Droplets, Gauge, Percent } from "lucide-react"
 import { CultureSummaryColumn } from "./comparison/culture-summary-column"
+import * as htmlToImage from 'html-to-image'
+import { Camera } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { ExpandableCard } from "./expandable-card"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
@@ -179,10 +181,35 @@ export function ComparacionTab() {
     </ExpandableCard>
   )
 
+  const handleCapture = async () => {
+    const element = document.getElementById('capture-comparacion');
+    if (!element) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(element, {
+        backgroundColor: '#0a0a0a',
+        pixelRatio: 2
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `Reporte-Comparacion-${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-comparacion">
       {/* Controles de Selección */}
-      <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-yellow-500/20 p-4 rounded-md shadow-lg">
+      <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-yellow-500/20 p-4 rounded-md shadow-lg relative">
+        <button 
+          onClick={handleCapture}
+          className="absolute -top-3 right-4 flex items-center gap-1.5 bg-[#0a0a0a] hover:bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold z-10"
+          title="Capturar pantalla"
+        >
+          <Camera size={12} />
+          Captura
+        </button>
         <div className="flex-1 flex flex-col gap-2">
           <label className="text-blue-500 text-xs font-bold uppercase tracking-wider">🔵 Seleccionar Lote A</label>
           <select 

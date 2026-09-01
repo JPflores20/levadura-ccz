@@ -3,6 +3,8 @@ import React, { useState } from "react"
 import useSWR from 'swr'
 import { ExcelProcessorAber } from "./cultivo/excel-processor-aber"
 import { ExpandableCard } from "./expandable-card"
+import * as htmlToImage from 'html-to-image'
+import { Camera } from 'lucide-react'
 import { ScatterChart, Scatter, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis } from "recharts"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
 
@@ -67,10 +69,35 @@ export function CultivoTab() {
     return null;
   };
 
+  const handleCapture = async () => {
+    const element = document.getElementById('capture-cultivo');
+    if (!element) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(element, {
+        backgroundColor: '#0a0a0a',
+        pixelRatio: 2
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `Reporte-Sensores-ABER-${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-cultivo">
       {/* Header and Upload */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 relative">
+        <button 
+          onClick={handleCapture}
+          className="absolute -top-3 right-4 flex items-center gap-1.5 bg-[#0a0a0a] hover:bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold z-10"
+          title="Capturar pantalla"
+        >
+          <Camera size={12} />
+          Captura
+        </button>
         <div className="flex flex-col">
           <h2 className="text-sm font-bold text-yellow-500 tracking-widest">VALIDACIÓN DE SENSORES ABER</h2>
           <p className="text-xs text-zinc-400">Comparativa Conteo Automatizado vs Siembra Microbiológica</p>

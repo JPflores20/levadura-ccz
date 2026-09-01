@@ -4,6 +4,8 @@ import { ExcelProcessorKinetics } from "./kinetics/excel-processor-kinetics"
 import useSWR from 'swr'
 import { KpiCard } from "./kpi-card"
 import { ExpandableCard } from "./expandable-card"
+import * as htmlToImage from 'html-to-image'
+import { Camera } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
 import { CHART_COLORS, axisProps } from "@/lib/chart-config"
 
@@ -134,10 +136,35 @@ export function CineticaTab() {
     return null
   }
 
+  const handleCapture = async () => {
+    const element = document.getElementById('capture-cinetica');
+    if (!element) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(element, {
+        backgroundColor: '#0a0a0a',
+        pixelRatio: 2
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `Reporte-Cinetica-${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-cinetica">
       {/* Selector */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 shadow-lg">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 shadow-lg relative">
+        <button 
+          onClick={handleCapture}
+          className="absolute -top-3 right-4 flex items-center gap-1.5 bg-[#0a0a0a] hover:bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold z-10"
+          title="Capturar pantalla"
+        >
+          <Camera size={12} />
+          Captura
+        </button>
         <ExcelProcessorKinetics />
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
