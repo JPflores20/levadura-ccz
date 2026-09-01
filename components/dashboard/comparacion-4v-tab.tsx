@@ -14,26 +14,36 @@ export function Comparacion4vTab() {
     dedupingInterval: 60000 
   })
   
-  const rawData = dbData?.rawData || []
+  const statsData = dbData?.stats || []
 
   // Extraer las combinaciones únicas de Cepa + Propagación para identificar cada "Cultivo"
-  const uniqueCultivos = Array.from(new Set(rawData.map((d: any) => {
+  const uniqueCultivos = Array.from(new Set(statsData.map((d: any) => {
     const cepa = d.cepa?.toString().trim().toUpperCase() || "N/A"
     const prop = d.propagacion?.toString().trim().toUpperCase() || "N/A"
     return `${cepa} - ${prop}`
   }))).filter(c => c !== "N/A - N/A") as string[]
 
-  const [cultivoA, setCultivoA] = useState<string>(uniqueCultivos[0] || "")
-  const [cultivoB, setCultivoB] = useState<string>(uniqueCultivos[1] || uniqueCultivos[0] || "")
+  const [cultivoA, setCultivoA] = useState<string>("")
+  const [cultivoB, setCultivoB] = useState<string>("")
+
+  // Auto-seleccionar los primeros cultivos disponibles cuando se cargan los datos
+  React.useEffect(() => {
+    if (uniqueCultivos.length > 0) {
+      if (!cultivoA) setCultivoA(uniqueCultivos[0])
+      if (!cultivoB && uniqueCultivos.length > 1) setCultivoB(uniqueCultivos[1])
+      else if (!cultivoB) setCultivoB(uniqueCultivos[0])
+    }
+  }, [uniqueCultivos.length])
 
   // Función para filtrar y extraer la data de un cultivo específico
   const getCultivoData = (cultivoName: string) => {
     if (!cultivoName) return []
     const [cepa, prop] = cultivoName.split(" - ")
-    return rawData.filter((d: any) => 
-      d.cepa?.toString().trim().toUpperCase() === cepa && 
-      d.propagacion?.toString().trim().toUpperCase() === prop
-    )
+    return statsData.filter((d: any) => {
+      const dCepa = d.cepa?.toString().trim().toUpperCase() || "N/A"
+      const dProp = d.propagacion?.toString().trim().toUpperCase() || "N/A"
+      return dCepa === cepa && dProp === prop
+    })
   }
 
   const dataA = getCultivoData(cultivoA)
