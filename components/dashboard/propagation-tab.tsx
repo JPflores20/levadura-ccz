@@ -23,7 +23,11 @@ export function PropagationTab() {
   const [filterTanques, setFilterTanques] = useState<string[]>([])
   const [filterDobleteo, setFilterDobleteo] = useState<string[]>([])
 
-  const { data: dbData } = useSWR('/api/get-propagation', fetcher, { refreshInterval: 2000 })
+  const { data: dbData } = useSWR('/api/get-propagation', fetcher, { 
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 300000 
+  })
 
   useEffect(() => {
     if (dbData && dbData.stats) {

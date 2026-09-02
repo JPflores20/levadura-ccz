@@ -12,8 +12,9 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function Comparacion4vTab() {
   const { data: dbData } = useSWR('/api/get-kinetics', fetcher, { 
-    revalidateOnFocus: true,
-    dedupingInterval: 60000 
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 300000 
   })
   
   const statsData = dbData?.stats || []

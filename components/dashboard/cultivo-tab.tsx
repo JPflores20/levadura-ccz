@@ -12,8 +12,9 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function CultivoTab() {
   const { data: dbData } = useSWR('/api/get-aber', fetcher, { 
-    revalidateOnFocus: true,
-    dedupingInterval: 60000 
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 300000 
   })
   
   const rawData = dbData?.rawData || []
