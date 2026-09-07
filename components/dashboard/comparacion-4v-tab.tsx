@@ -7,6 +7,7 @@ import * as htmlToImage from 'html-to-image'
 import { Camera } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
+import { formatExcelDate } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -17,13 +18,37 @@ export function Comparacion4vTab() {
     dedupingInterval: 300000 
   })
   
+  const rawData = dbData?.rawData || []
   const statsData = dbData?.stats || []
 
-  // Extraer las combinaciones únicas de Cepa + Propagación para identificar cada "Cultivo"
-  const uniqueCultivos = Array.from(new Set(statsData.map((d: any) => {
-    const cepa = d.cepa?.toString().trim().toUpperCase() || "N/A"
-    const prop = d.propagacion?.toString().trim().toUpperCase() || "N/A"
-    return `${cepa} - ${prop}`
+  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => formatExcelDate(d.Fecha || d.fecha)))).filter(Boolean) as string[]
+  const uniqueEtapas = Array.from(new Set(rawData.map((d: any) => (d.Etapa || d.etapa)?.toString().trim()))).filter(Boolean) as string[]
+  const uniqueTanques = Array.from(new Set(rawData.map((d: any) => (d.Tanque || d.TCC || d.Lote || d.Item)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => (d.Marca || d.cepa)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+
+  const [filterFecha, setFilterFecha] = useState<string>("TODAS")
+  const [filterEtapa, setFilterEtapa] = useState<string>("TODAS")
+  const [filterTanque, setFilterTanque] = useState<string>("TODOS")
+  const [filterMarca, setFilterMarca] = useState<string>("TODAS")
+
+  const filteredRawData = rawData.filter((d: any) => {
+    const fFecha = formatExcelDate(d.Fecha || d.fecha)
+    const fEtapa = (d.Etapa || d.etapa)?.toString().trim()
+    const fTanque = (d.Tanque || d.TCC || d.Lote || d.Item)?.toString().trim().toUpperCase()
+    const fMarca = (d.Marca || d.cepa)?.toString().trim().toUpperCase()
+
+    if (filterFecha !== "TODAS" && fFecha !== filterFecha) return false
+    if (filterEtapa !== "TODAS" && fEtapa !== filterEtapa) return false
+    if (filterTanque !== "TODOS" && fTanque !== filterTanque) return false
+    if (filterMarca !== "TODAS" && fMarca !== filterMarca) return false
+    return true
+  })
+
+  // Extraer las combinaciones únicas (Fecha - Cepa) del rawData filtrado
+  const uniqueCultivos = Array.from(new Set(filteredRawData.map((d: any) => {
+    const fecha = formatExcelDate(d.Fecha || d.fecha) || "N/A"
+    const cepa = (d.Marca || d.cepa)?.toString().trim().toUpperCase() || "N/A"
+    return `${fecha} - ${cepa}`
   }))).filter(c => c !== "N/A - N/A") as string[]
 
   const [cultivoA, setCultivoA] = useState<string>("")
@@ -32,20 +57,19 @@ export function Comparacion4vTab() {
   // Auto-seleccionar los primeros cultivos disponibles cuando se cargan los datos
   React.useEffect(() => {
     if (uniqueCultivos.length > 0) {
-      if (!cultivoA) setCultivoA(uniqueCultivos[0])
-      if (!cultivoB && uniqueCultivos.length > 1) setCultivoB(uniqueCultivos[1])
-      else if (!cultivoB) setCultivoB(uniqueCultivos[0])
+      if (!uniqueCultivos.includes(cultivoA)) setCultivoA(uniqueCultivos[0])
+      if (!uniqueCultivos.includes(cultivoB)) setCultivoB(uniqueCultivos.length > 1 ? uniqueCultivos[1] : uniqueCultivos[0])
     }
-  }, [uniqueCultivos.length])
+  }, [uniqueCultivos.length, cultivoA, cultivoB])
 
   // Función para filtrar y extraer la data de un cultivo específico
   const getCultivoData = (cultivoName: string) => {
     if (!cultivoName) return []
-    const [cepa, prop] = cultivoName.split(" - ")
+    const [fecha, cepa] = cultivoName.split(" - ")
     return statsData.filter((d: any) => {
+      const dFecha = formatExcelDate(d.fecha?.toString().trim()) || "N/A"
       const dCepa = d.cepa?.toString().trim().toUpperCase() || "N/A"
-      const dProp = d.propagacion?.toString().trim().toUpperCase() || "N/A"
-      return dCepa === cepa && dProp === prop
+      return dFecha === fecha && dCepa === cepa
     })
   }
 
@@ -211,6 +235,54 @@ export function Comparacion4vTab() {
   return (
     <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-4v">
       
+      {/* Filtros Globales (Fecha, Etapa, Tanque, Marca) */}
+      <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-zinc-800 p-4 rounded-md shadow-lg">
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Fecha</label>
+          <select 
+            value={filterFecha}
+            onChange={e => setFilterFecha(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODAS">TODAS</option>
+            {uniqueFechas.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Etapa</label>
+          <select 
+            value={filterEtapa}
+            onChange={e => setFilterEtapa(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODAS">TODAS</option>
+            {uniqueEtapas.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tanque</label>
+          <select 
+            value={filterTanque}
+            onChange={e => setFilterTanque(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODOS">TODOS</option>
+            {uniqueTanques.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Marca</label>
+          <select 
+            value={filterMarca}
+            onChange={e => setFilterMarca(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODAS">TODAS</option>
+            {uniqueMarcas.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </div>
+      </div>
+
       {/* Controles de Selección */}
       <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-yellow-500/20 p-4 rounded-md shadow-lg relative">
         <button 

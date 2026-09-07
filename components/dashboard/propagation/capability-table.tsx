@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { doc, onSnapshot } from "firebase/firestore"
 import { firestoreDatabase } from "@/lib/firebase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ExcelProcessor } from "./excel-processor"
+import { calculateMean, calculateStdDev, calculateCpCpk } from "@/lib/statistics"
+
+const LIMITS: Record<string, { lsl: number, usl: number }> = {
+  viab: { lsl: 95, usl: 100 },
+  conteo: { lsl: 180, usl: 260 },
+  vig: { lsl: 88, usl: 100 },
+  ph: { lsl: 4.0, usl: 5.5 },
+  plato: { lsl: 8, usl: 16 },
+  solidos: { lsl: 0, usl: 0 },
+  temp: { lsl: 0, usl: 0 }
+}
 
 const defaultMockData = [
   { id: "conteo", indicatorName: "Conteo Celular (x10^6/mL)", media: 0, standardDeviation: 0, cp: 0, cpk: 0, pp: 0, ppk: 0, evaluationStatus: "red" },
@@ -31,22 +42,18 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
     const ordered: any[] = [];
     
     desiredOrder.forEach(id => {
-      // Find the stat in the incoming data
       let stat = incomingStats.find(s => s.id === id || (id === "vig" && s.id === "vigor"));
       
       if (!stat) {
-        // Fallback to default mock data if not found in incoming stats
         stat = defaultMockData.find(s => s.id === id);
       }
       
       if (stat) {
-        // Clone to modify names safely
         stat = { ...stat };
-        // Rename for consistency regardless of what the backend sent
         if (id === "conteo") stat.indicatorName = "Conteo Celular (x10^6/mL)";
         if (id === "viab") stat.indicatorName = "Viabilidad (%)";
         if (id === "vig") {
-          stat.id = "vig"; // normalize ID
+          stat.id = "vig";
           stat.indicatorName = "Vitalidad (%)";
         }
         if (id === "solidos") stat.indicatorName = "Porcentaje de Sólidos (%)";
@@ -60,7 +67,6 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
     return ordered.length > 0 ? ordered : defaultMockData;
   }
 
-  // Sincronizar con el estado global si viene por props
   useEffect(() => {
     if (stats && stats.length > 0) {
       setTableData(enforceOrder(stats))
@@ -79,26 +85,59 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
     }
   }
 
-  const getMinMax = (id: string) => {
-    if (!dynamicData || dynamicData.length === 0) return { min: "-", max: "-" }
-    
-    let key = ""
-    if (id === "viab") key = "viabilidad"
-    if (id === "conteo") key = "conteo"
-    if (id === "vigor" || id === "vig") key = "vigorosas"
-    if (id === "solidos") key = "solidos"
-    if (id === "plato") key = "plato"
-    if (id === "temp") key = "temp"
+  const processedTableData = useMemo(() => {
+    return tableData.map(indicator => {
+      let minStr = "-"
+      let maxStr = "-"
+      let updatedIndicator = { ...indicator }
 
-    if (!key) return { min: "-", max: "-" }
-    
-    const vals = dynamicData.map(d => d[key]).filter(v => v !== undefined && !isNaN(v) && v !== 0)
-    if (vals.length === 0) return { min: "-", max: "-" }
-    return { 
-      min: Math.min(...vals).toFixed(2), 
-      max: Math.max(...vals).toFixed(2) 
-    }
-  }
+      if (dynamicData && dynamicData.length > 0) {
+        let key = ""
+        if (indicator.id === "viab") key = "viabilidad"
+        if (indicator.id === "conteo") key = "conteo"
+        if (indicator.id === "vigor" || indicator.id === "vig") key = "vigorosas"
+        if (indicator.id === "solidos") key = "solidos"
+        if (indicator.id === "plato") key = "plato"
+        if (indicator.id === "temp") key = "temp"
+
+        if (key) {
+          const vals = dynamicData.map(d => Number(d[key])).filter(v => v !== undefined && !isNaN(v) && v !== 0)
+          
+          if (vals.length > 0) {
+            minStr = Math.min(...vals).toFixed(2)
+            maxStr = Math.max(...vals).toFixed(2)
+
+            const limits = LIMITS[indicator.id] || { lsl: 0, usl: 0 }
+            const media = calculateMean(vals)
+            const std = calculateStdDev(vals, media) || 0.001
+            
+            let cp = 0, cpk = 0, pp = 0, ppk = 0;
+            let status = "red"
+            
+            if (limits.usl > 0 || limits.lsl > 0) {
+              const res = calculateCpCpk(vals, limits.lsl, limits.usl, media, std)
+              cp = res.cp; cpk = res.cpk; pp = res.pp; ppk = res.ppk;
+              if (cpk >= 1.33) status = "green"
+              else if (cpk >= 1.0) status = "yellow"
+            }
+
+            updatedIndicator = {
+              ...updatedIndicator,
+              media: Number(media.toFixed(2)),
+              standardDeviation: Number(std.toFixed(2)),
+              cp: Number(Math.max(0, cp).toFixed(2)),
+              cpk: Number(Math.max(0, cpk).toFixed(2)),
+              pp: Number(Math.max(0, pp).toFixed(2)),
+              ppk: Number(Math.max(0, ppk).toFixed(2)),
+              evaluationStatus: status
+            }
+          }
+        }
+      }
+      
+      return { ...updatedIndicator, min: minStr, max: maxStr }
+    })
+  }, [tableData, dynamicData])
 
   return (
     <Card className="border-yellow-500/40 bg-[#121212] text-white flex flex-col h-full">
@@ -132,14 +171,13 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tableData.map((indicator) => {
-              const { min, max } = getMinMax(indicator.id)
+            {processedTableData.map((indicator) => {
               return (
                 <TableRow key={indicator.id} className="border-zinc-800/50 hover:bg-zinc-800/40">
                   <TableCell className="font-medium text-zinc-200 py-1 whitespace-nowrap">{indicator.indicatorName}</TableCell>
                   <TableCell className="text-right text-yellow-500 font-mono py-1">{indicator.media}</TableCell>
-                  <TableCell className="text-right font-mono py-1">{min}</TableCell>
-                  <TableCell className="text-right font-mono py-1">{max}</TableCell>
+                  <TableCell className="text-right font-mono py-1">{indicator.min}</TableCell>
+                  <TableCell className="text-right font-mono py-1">{indicator.max}</TableCell>
                   <TableCell className="text-right font-mono py-1">{indicator.standardDeviation}</TableCell>
                   <TableCell className="text-right font-mono py-1">{indicator.cp}</TableCell>
                   <TableCell className="text-right font-mono py-1">{indicator.cpk}</TableCell>

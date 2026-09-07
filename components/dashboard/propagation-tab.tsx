@@ -19,9 +19,13 @@ export function PropagationTab() {
   const [realData, setRealData] = useState<any>(null)
 
   const [filterFechas, setFilterFechas] = useState<string[]>([])
+  const [isOpenFechas, setIsOpenFechas] = useState(false)
   const [filterTipos, setFilterTipos] = useState<string[]>([])
+  const [isOpenTipos, setIsOpenTipos] = useState(false)
   const [filterTanques, setFilterTanques] = useState<string[]>([])
+  const [isOpenTanques, setIsOpenTanques] = useState(false)
   const [filterDobleteo, setFilterDobleteo] = useState<string[]>([])
+  const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
 
   const { data: dbData } = useSWR('/api/get-propagation', fetcher, { 
     revalidateOnFocus: false,
@@ -79,74 +83,58 @@ export function PropagationTab() {
   const hasData = propagationPoints.length > 0
   const latestData = hasData ? propagationPoints[propagationPoints.length - 1] : null
 
+  // Helpers to calculate dynamic average from the filtered data
+  const getDynamicAvg = (key: string) => {
+    const vals = propagationPoints.map((d: any) => d[key]).filter((v: any) => v !== undefined && !isNaN(v) && v !== 0)
+    if (vals.length === 0) return null
+    return vals.reduce((a: number, b: number) => a + b, 0) / vals.length
+  }
+
+  const getDynamicLast = (key: string) => {
+    const lastValid = [...propagationPoints].reverse().find(p => p[key] > 0)
+    return lastValid ? lastValid[key] : null
+  }
+
   const displayKpis = mockKpis.map(kpi => {
     let val: any = kpi.value
     
-    // Mapeo de IDs de KPI a IDs de stats
-    let statId = kpi.id
-    if (kpi.id === "viabilidad") statId = "viab"
-
-    const stat = realData?.stats?.find((s: any) => s.id === statId)
+    // Mapeo de IDs de KPI a claves de propagationPoints
+    let propKey = ""
+    if (kpi.id === "conteo") propKey = "conteo"
+    if (kpi.id === "viabilidad") propKey = "viabilidad"
+    if (kpi.id === "plato") propKey = "solidos"
+    if (kpi.id === "plato_2") propKey = "plato"
+    if (kpi.id === "ph") propKey = "ph"
+    if (kpi.id === "aireacion") propKey = "aireacion"
+    if (kpi.id === "zn") propKey = "zn"
+    if (kpi.id === "temp") propKey = "temp"
+    if (kpi.id === "solidos") propKey = "solidos"
     
     if (kpi.id === "vitalidad") {
-      // Calcular vitalidad (Vigorosas - Muy Vigorosas - Débiles - Muertas)
-      // Usaremos los promedios si están disponibles, sino el último válido
-      let viab = 0;
-      let vigor = 0;
+      let dynViab = getDynamicAvg("viabilidad") || 0
+      let dynVigor = getDynamicAvg("vigorosas") || 0
       
-      const statViab = realData?.stats?.find((s: any) => s.id === "viab")
-      const statVigor = realData?.stats?.find((s: any) => s.id === "vigor")
-      
-      if (statViab && statVigor) {
-        viab = statViab.media
-        vigor = statVigor.media
-      } else {
-        const lastValid = [...propagationPoints].reverse().find(p => p.viabilidad > 0)
-        if (lastValid) {
-          viab = lastValid.viabilidad
-          vigor = lastValid.vigorosas
-        }
-      }
-      
-      const vigorosas = Math.max(0, viab - vigor).toFixed(0)
-      const muyVigorosas = Math.max(0, vigor).toFixed(0)
-      const debiles = Math.max(0, (100 - viab) * 0.6).toFixed(0)
-      const muertas = Math.max(0, (100 - viab) * 0.4).toFixed(0)
+      const vigorosas = Math.max(0, dynViab - dynVigor).toFixed(0)
+      const muyVigorosas = Math.max(0, dynVigor).toFixed(0)
+      const debiles = Math.max(0, (100 - dynViab) * 0.6).toFixed(0)
+      const muertas = Math.max(0, (100 - dynViab) * 0.4).toFixed(0)
       
       val = `${vigorosas}-${muyVigorosas}-${debiles}-${muertas}`
       
-    } else if (stat && stat.media !== undefined && stat.media !== null) {
-      // Usar el promedio de la tabla de capacidad (2 decimales para coincidir exactamente)
-      val = stat.media.toFixed(2)
     } else {
-      // Fallback a los últimos datos (para cuando no hay stats globales)
-      if (kpi.id === "viabilidad") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.viabilidad > 0)
-        if (lastValid) val = lastValid.viabilidad.toFixed(1)
-      }
+      // Obtenemos el promedio filtrado, si no hay tomamos el último válido, y si no hay tomamos 0
+      const dynAvg = getDynamicAvg(propKey)
+      const dynLast = getDynamicLast(propKey)
+      
+      const numericVal = dynAvg !== null ? dynAvg : (dynLast !== null ? dynLast : 0)
+      
+      // Ajustamos decimales según el KPI
       if (kpi.id === "conteo") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.conteo > 0)
-        if (lastValid) val = lastValid.conteo.toFixed(0)
-      }
-      if (kpi.id === "plato" || kpi.id === "plato_2") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.plato > 0)
-        if (lastValid) val = lastValid.plato.toFixed(2)
-      }
-      if (kpi.id === "ph") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.ph > 0)
-        if (lastValid) val = lastValid.ph.toFixed(2)
-      }
-      if (kpi.id === "aireacion") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.aireacion > 0)
-        if (lastValid) val = lastValid.aireacion.toFixed(1)
-      }
-      if (kpi.id === "zn") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.zn > 0)
-        if (lastValid) val = lastValid.zn.toFixed(2)
-      }
-      if (kpi.id === "temp") {
-        const lastValid = [...propagationPoints].reverse().find(p => p.temp > 0)
-        if (lastValid) val = lastValid.temp.toFixed(1)
+        val = numericVal.toFixed(2)
+      } else if (kpi.id === "viabilidad" || kpi.id === "solidos") {
+        val = numericVal.toFixed(2)
+      } else {
+        val = numericVal.toFixed(2)
       }
     }
     
@@ -155,15 +143,6 @@ export function PropagationTab() {
 
   const row1And2 = displayKpis.slice(0, 8)
   const row3 = displayKpis.slice(8)
-
-  const toggleFilter = (setter: any, current: string[], val: string) => {
-    if (current.includes(val)) {
-      setter(current.filter(v => v !== val))
-    } else {
-      setter([...current, val])
-    }
-  }
-
 
   const handleCapture = async () => {
     const element = document.getElementById('capture-dashboard');
@@ -182,11 +161,6 @@ export function PropagationTab() {
     }
   }
 
-  const [isOpenFechas, setIsOpenFechas] = useState(false)
-  const [isOpenTipos, setIsOpenTipos] = useState(false)
-  const [isOpenTanques, setIsOpenTanques] = useState(false)
-  const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
-
   return (
     <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg" id="capture-dashboard">
       <div className="flex justify-between items-center bg-[#121212] border border-yellow-500/20 rounded-md p-2">
@@ -203,27 +177,26 @@ export function PropagationTab() {
             Captura
           </button>
         </div>
-        <div className="flex gap-4">
-          
-          <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs">Fecha:</label>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenFechas(false)}>
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Fecha:</label>
             <div className="relative">
               <button 
                 onClick={() => setIsOpenFechas(!isOpenFechas)} 
-                className="bg-black border border-zinc-700 text-zinc-300 hover:border-yellow-500/50 text-xs rounded px-2 py-1 flex items-center justify-between min-w-[140px]"
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
               >
                 <span className="truncate">
-                  {filterFechas.length === 0 ? "Todas las fechas" : `${filterFechas.length} seleccionadas`}
+                  {filterFechas.length === 0 ? "(Todas)" : `${filterFechas.length} seleccionadas`}
                 </span>
-                <span className="ml-2 text-[8px]">▼</span>
+                <span className="ml-2 text-[10px]">▼</span>
               </button>
               
               {isOpenFechas && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-48 overflow-y-auto">
-                  {uniqueFechas.length === 0 && <span className="text-zinc-600 text-[10px]">Sin datos</span>}
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueFechas.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
                   
                   {uniqueFechas.length > 0 && (
-                    <label className="flex items-center gap-2 text-xs text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1 rounded border-b border-zinc-700 pb-2 mb-1">
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
@@ -235,7 +208,7 @@ export function PropagationTab() {
                   )}
 
                   {uniqueFechas.map(f => (
-                    <label key={f} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1 rounded">
+                    <label key={f} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
@@ -244,7 +217,11 @@ export function PropagationTab() {
                           if (filterFechas.length === 0) {
                             setFilterFechas([f])
                           } else {
-                            toggleFilter(setFilterFechas, filterFechas, f)
+                            if (filterFechas.includes(f)) {
+                              setFilterFechas(filterFechas.filter(v => v !== f))
+                            } else {
+                              setFilterFechas([...filterFechas, f])
+                            }
                           }
                         }} 
                       />
@@ -255,28 +232,26 @@ export function PropagationTab() {
               )}
             </div>
           </div>
-
-          <div className="h-4 w-px bg-zinc-700 mx-1" />
-
-          <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs">Tipo de Lev:</label>
+          
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTipos(false)}>
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tipo de Lev:</label>
             <div className="relative">
               <button 
                 onClick={() => setIsOpenTipos(!isOpenTipos)} 
-                className="bg-black border border-zinc-700 text-zinc-300 hover:border-yellow-500/50 text-xs rounded px-2 py-1 flex items-center justify-between min-w-[140px]"
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
               >
                 <span className="truncate">
-                  {filterTipos.length === 0 ? "Todos los tipos" : filterTipos.join(", ")}
+                  {filterTipos.length === 0 ? "(Todos)" : `${filterTipos.length} seleccionados`}
                 </span>
-                <span className="ml-2 text-[8px]">▼</span>
+                <span className="ml-2 text-[10px]">▼</span>
               </button>
               
               {isOpenTipos && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-48 overflow-y-auto">
-                  {uniqueTipos.length === 0 && <span className="text-zinc-600 text-[10px]">Sin datos</span>}
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueTipos.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
                   
                   {uniqueTipos.length > 0 && (
-                    <label className="flex items-center gap-2 text-xs text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1 rounded border-b border-zinc-700 pb-2 mb-1">
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
@@ -288,17 +263,15 @@ export function PropagationTab() {
                   )}
 
                   {uniqueTipos.map(t => (
-                    <label key={t} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1 rounded">
+                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
                         checked={filterTipos.length === 0 || filterTipos.includes(t)} 
                         onChange={() => {
-                          if (filterTipos.length === 0) {
-                            setFilterTipos([t])
-                          } else {
-                            toggleFilter(setFilterTipos, filterTipos, t)
-                          }
+                          if (filterTipos.length === 0) setFilterTipos([t])
+                          else if (filterTipos.includes(t)) setFilterTipos(filterTipos.filter(v => v !== t))
+                          else setFilterTipos([...filterTipos, t])
                         }} 
                       />
                       {t}
@@ -308,28 +281,26 @@ export function PropagationTab() {
               )}
             </div>
           </div>
-
-          <div className="h-4 w-px bg-zinc-700 mx-1" />
-
-          <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs">Tanque:</label>
+          
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTanques(false)}>
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tanque:</label>
             <div className="relative">
               <button 
                 onClick={() => setIsOpenTanques(!isOpenTanques)} 
-                className="bg-black border border-zinc-700 text-zinc-300 hover:border-yellow-500/50 text-xs rounded px-2 py-1 flex items-center justify-between min-w-[140px]"
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
               >
                 <span className="truncate">
-                  {filterTanques.length === 0 ? "Todos los tanques" : filterTanques.join(", ")}
+                  {filterTanques.length === 0 ? "(Todos)" : `${filterTanques.length} seleccionados`}
                 </span>
-                <span className="ml-2 text-[8px]">▼</span>
+                <span className="ml-2 text-[10px]">▼</span>
               </button>
               
               {isOpenTanques && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-48 overflow-y-auto">
-                  {uniqueTanques.length === 0 && <span className="text-zinc-600 text-[10px]">Sin datos</span>}
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueTanques.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
                   
                   {uniqueTanques.length > 0 && (
-                    <label className="flex items-center gap-2 text-xs text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1 rounded border-b border-zinc-700 pb-2 mb-1">
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
@@ -341,17 +312,15 @@ export function PropagationTab() {
                   )}
 
                   {uniqueTanques.map(t => (
-                    <label key={t} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1 rounded">
+                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
                       <input 
                         type="checkbox" 
                         className="accent-yellow-500"
                         checked={filterTanques.length === 0 || filterTanques.includes(t)} 
                         onChange={() => {
-                          if (filterTanques.length === 0) {
-                            setFilterTanques([t])
-                          } else {
-                            toggleFilter(setFilterTanques, filterTanques, t)
-                          }
+                          if (filterTanques.length === 0) setFilterTanques([t])
+                          else if (filterTanques.includes(t)) setFilterTanques(filterTanques.filter(v => v !== t))
+                          else setFilterTanques([...filterTanques, t])
                         }} 
                       />
                       {t}
@@ -361,61 +330,57 @@ export function PropagationTab() {
               )}
             </div>
           </div>
+          
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenDobleteo(false)}>
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Dobleteo:</label>
+            <div className="relative">
+              <button 
+                onClick={() => setIsOpenDobleteo(!isOpenDobleteo)} 
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
+              >
+                <span className="truncate">
+                  {filterDobleteo.length === 0 ? "(Todos)" : `${filterDobleteo.length} seleccionados`}
+                </span>
+                <span className="ml-2 text-[10px]">▼</span>
+              </button>
+              
+              {isOpenDobleteo && (
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueDobleteo.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
+                  
+                  {uniqueDobleteo.length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterDobleteo.length === 0} 
+                        onChange={() => setFilterDobleteo([])} 
+                      />
+                      (Todos)
+                    </label>
+                  )}
 
-          <div className="h-4 w-px bg-zinc-700 mx-1" />
-
-            <div className="flex items-center gap-2">
-              <label className="text-zinc-400 text-xs">Dobleteo:</label>
-              <div className="relative">
-                <button 
-                  onClick={() => setIsOpenDobleteo(!isOpenDobleteo)} 
-                  className="bg-black border border-zinc-700 text-zinc-300 hover:border-yellow-500/50 text-xs rounded px-2 py-1 flex items-center justify-between min-w-[140px]"
-                >
-                  <span className="truncate">
-                    {filterDobleteo.length === 0 ? "Todos (Calberg, Antes...)" : filterDobleteo.join(", ")}
-                  </span>
-                  <span className="ml-2 text-[8px]">▼</span>
-                </button>
-                
-                {isOpenDobleteo && (
-                  <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-48 overflow-y-auto">
-                    {uniqueDobleteo.length === 0 && <span className="text-zinc-600 text-[10px]">Sin datos</span>}
-                    
-                    {uniqueDobleteo.length > 0 && (
-                      <label className="flex items-center gap-2 text-xs text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1 rounded border-b border-zinc-700 pb-2 mb-1">
-                        <input 
-                          type="checkbox" 
-                          className="accent-yellow-500"
-                          checked={filterDobleteo.length === 0} 
-                          onChange={() => setFilterDobleteo([])} 
-                        />
-                        (Todos)
-                      </label>
-                    )}
-
-                    {uniqueDobleteo.map(t => (
-                      <label key={t} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1 rounded">
-                        <input 
-                          type="checkbox" 
-                          className="accent-yellow-500"
-                          checked={filterDobleteo.length === 0 || filterDobleteo.includes(t)} 
-                          onChange={() => {
-                            if (filterDobleteo.length === 0) {
-                              setFilterDobleteo([t])
-                            } else {
-                              toggleFilter(setFilterDobleteo, filterDobleteo, t)
-                            }
-                          }} 
-                        />
-                        {t}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  {uniqueDobleteo.map(t => (
+                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterDobleteo.length === 0 || filterDobleteo.includes(t)} 
+                        onChange={() => {
+                          if (filterDobleteo.length === 0) setFilterDobleteo([t])
+                          else if (filterDobleteo.includes(t)) setFilterDobleteo(filterDobleteo.filter(v => v !== t))
+                          else setFilterDobleteo([...filterDobleteo, t])
+                        }} 
+                      />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-2 h-fit">

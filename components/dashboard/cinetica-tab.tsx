@@ -8,6 +8,7 @@ import * as htmlToImage from 'html-to-image'
 import { Camera } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts"
 import { CHART_COLORS, axisProps } from "@/lib/chart-config"
+import { formatExcelDate } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -19,18 +20,34 @@ export function CineticaTab() {
   })
   const rawData = dbData?.rawData || []
 
-  // Extraction robusta de Cepas e Items
-  const uniqueCepas = Array.from(new Set(rawData.map((d: any) => (d.Marca || d.cepa)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
-  const uniqueLotes = Array.from(new Set(rawData.map((d: any) => (d.Item || d.propagacion || d.Lote)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+  // Extracción de valores únicos para los filtros
+  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => formatExcelDate(d.Fecha || d.fecha)))).filter(Boolean) as string[]
+  const uniqueEtapas = Array.from(new Set(rawData.map((d: any) => (d.Etapa || d.etapa)?.toString().trim()))).filter(Boolean) as string[]
+  const uniqueDias = Array.from(new Set(rawData.map((d: any) => (d.Dias || d["Días"] || d.dias)?.toString().trim()))).filter(Boolean) as string[]
+  const uniqueTanques = Array.from(new Set(rawData.map((d: any) => (d.Tanque || d.TCC || d.Lote || d.Item)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => (d.Marca || d.cepa)?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
 
-  const [filterCepa, setFilterCepa] = useState<string>("TODAS")
-  const [filterLote, setFilterLote] = useState<string>(uniqueLotes.length > 0 ? uniqueLotes[0] : "TODOS")
+  const [filterFechas, setFilterFechas] = useState<string[]>([])
+  const [isOpenFechas, setIsOpenFechas] = useState(false)
+  const [filterEtapa, setFilterEtapa] = useState<string>("TODAS")
+  const [filterDias, setFilterDias] = useState<string>("TODOS")
+  const [filterTanques, setFilterTanques] = useState<string[]>([])
+  const [isOpenTanques, setIsOpenTanques] = useState(false)
+  const [filterMarca, setFilterMarca] = useState<string>("TODAS")
 
+  // Filtrado de rawData
   const filteredData = rawData.filter((d: any) => {
-    const cepa = (d.Marca || d.cepa)?.toString().trim().toUpperCase()
-    const lote = (d.Item || d.propagacion || d.Lote)?.toString().trim().toUpperCase()
-    if (filterCepa !== "TODAS" && cepa !== filterCepa) return false
-    if (filterLote !== "TODOS" && lote !== filterLote) return false
+    const dFecha = formatExcelDate(d.Fecha || d.fecha)
+    const dEtapa = (d.Etapa || d.etapa)?.toString().trim()
+    const dDias = (d.Dias || d["Días"] || d.dias)?.toString().trim()
+    const dTanque = (d.Tanque || d.TCC || d.Lote || d.Item)?.toString().trim().toUpperCase()
+    const dMarca = (d.Marca || d.cepa)?.toString().trim().toUpperCase()
+
+    if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
+    if (filterEtapa !== "TODAS" && dEtapa !== filterEtapa) return false
+    if (filterDias !== "TODOS" && dDias !== filterDias) return false
+    if (filterTanques.length > 0 && !filterTanques.includes(dTanque)) return false
+    if (filterMarca !== "TODAS" && dMarca !== filterMarca) return false
     return true
   })
 
@@ -167,27 +184,146 @@ export function CineticaTab() {
           Captura
         </button>
         <ExcelProcessorKinetics />
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Lote (Item):</label>
-            <select 
-              value={filterLote}
-              onChange={e => setFilterLote(e.target.value)}
-              className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
-            >
-              <option value="TODOS">TODOS</option>
-              {uniqueLotes.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenFechas(false)}>
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Fecha:</label>
+            <div className="relative">
+              <button 
+                onClick={() => setIsOpenFechas(!isOpenFechas)} 
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
+              >
+                <span className="truncate">
+                  {filterFechas.length === 0 ? "(Todas)" : `${filterFechas.length} seleccionadas`}
+                </span>
+                <span className="ml-2 text-[10px]">▼</span>
+              </button>
+              
+              {isOpenFechas && (
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueFechas.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
+                  
+                  {uniqueFechas.length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterFechas.length === 0} 
+                        onChange={() => setFilterFechas([])} 
+                      />
+                      (Todas)
+                    </label>
+                  )}
+
+                  {uniqueFechas.map(f => (
+                    <label key={f} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterFechas.length === 0 || filterFechas.includes(f)} 
+                        onChange={() => {
+                          if (filterFechas.length === 0) {
+                            setFilterFechas([f])
+                          } else {
+                            if (filterFechas.includes(f)) {
+                              setFilterFechas(filterFechas.filter(v => v !== f))
+                            } else {
+                              setFilterFechas([...filterFechas, f])
+                            }
+                          }
+                        }} 
+                      />
+                      {f}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Cepa (Marca):</label>
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Etapa:</label>
             <select 
-              value={filterCepa}
-              onChange={e => setFilterCepa(e.target.value)}
+              value={filterEtapa}
+              onChange={e => setFilterEtapa(e.target.value)}
               className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
             >
               <option value="TODAS">TODAS</option>
-              {uniqueCepas.map(c => <option key={c} value={c}>{c}</option>)}
+              {uniqueEtapas.map(x => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Días:</label>
+            <select 
+              value={filterDias}
+              onChange={e => setFilterDias(e.target.value)}
+              className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
+            >
+              <option value="TODOS">TODOS</option>
+              {uniqueDias.map(x => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTanques(false)}>
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Tanque:</label>
+            <div className="relative">
+              <button 
+                onClick={() => setIsOpenTanques(!isOpenTanques)} 
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
+              >
+                <span className="truncate">
+                  {filterTanques.length === 0 ? "(Todos)" : `${filterTanques.length} seleccionados`}
+                </span>
+                <span className="ml-2 text-[10px]">▼</span>
+              </button>
+              
+              {isOpenTanques && (
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueTanques.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
+                  
+                  {uniqueTanques.length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterTanques.length === 0} 
+                        onChange={() => setFilterTanques([])} 
+                      />
+                      (Todos)
+                    </label>
+                  )}
+
+                  {uniqueTanques.map(t => (
+                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterTanques.length === 0 || filterTanques.includes(t)} 
+                        onChange={() => {
+                          if (filterTanques.length === 0) {
+                            setFilterTanques([t])
+                          } else {
+                            if (filterTanques.includes(t)) {
+                              setFilterTanques(filterTanques.filter(v => v !== t))
+                            } else {
+                              setFilterTanques([...filterTanques, t])
+                            }
+                          }
+                        }} 
+                      />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">Marca:</label>
+            <select 
+              value={filterMarca}
+              onChange={e => setFilterMarca(e.target.value)}
+              className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
+            >
+              <option value="TODAS">TODAS</option>
+              {uniqueMarcas.map(x => <option key={x} value={x}>{x}</option>)}
             </select>
           </div>
         </div>

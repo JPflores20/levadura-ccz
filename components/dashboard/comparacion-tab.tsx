@@ -21,9 +21,22 @@ export function ComparacionTab() {
   
   const rawData = dbData?.rawData || []
 
+  const codigosUnicos = Array.from(new Set(rawData.map((d: any) => d["Codigo de Cultivo"] || d.codigoCultivo || "N/A"))).filter((v: any) => v !== "N/A" && v !== undefined) as string[]
+  const dobleteosUnicos = Array.from(new Set(rawData.map((d: any) => d["Dobleteo"] || d.dobleteo || "N/A"))).filter((v: any) => v !== "N/A" && v !== undefined) as string[]
+  const estadosUnicos = Array.from(new Set(rawData.map((d: any) => d["ESTADO"] || d["Estado"] || d.estado || "N/A"))).filter((v: any) => v !== "N/A" && v !== undefined) as string[]
+
+  const [filterCodigo, setFilterCodigo] = useState<string>("TODOS")
+  const [filterDobleteo, setFilterDobleteo] = useState<string>("TODOS")
+  const [filterEstado, setFilterEstado] = useState<string>("TODOS")
+
   // Extraer combinaciones únicas para los lotes (agrupando por tanque, tipoLev y fecha inicial)
   const uniqueLotesMap = new Map()
   rawData.forEach((d: any, index: number) => {
+    // Aplicar filtros a los lotes disponibles
+    if (filterCodigo !== "TODOS" && (d["Codigo de Cultivo"] || d.codigoCultivo) !== filterCodigo) return;
+    if (filterDobleteo !== "TODOS" && (d["Dobleteo"] || d.dobleteo) !== filterDobleteo) return;
+    if (filterEstado !== "TODOS" && (d["ESTADO"] || d["Estado"] || d.estado) !== filterEstado) return;
+
     const label = `${d.tanque || 'N/A'} (${d.tipoLev || 'N/A'} - ${d.fecha || 'N/A'})`
     if (!uniqueLotesMap.has(label)) {
       uniqueLotesMap.set(label, {
@@ -201,6 +214,44 @@ export function ComparacionTab() {
 
   return (
     <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-comparacion">
+      
+      {/* Filtros Globales (Código, Dobleteo, Estado) */}
+      <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-zinc-800 p-4 rounded-md shadow-lg">
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Código de Cultivo</label>
+          <select 
+            value={filterCodigo}
+            onChange={e => setFilterCodigo(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODOS">TODOS</option>
+            {codigosUnicos.map((c: string) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Dobleteo</label>
+          <select 
+            value={filterDobleteo}
+            onChange={e => setFilterDobleteo(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODOS">TODOS</option>
+            {dobleteosUnicos.map((d: string) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Estado</label>
+          <select 
+            value={filterEstado}
+            onChange={e => setFilterEstado(e.target.value)}
+            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-2 outline-none focus:border-yellow-500"
+          >
+            <option value="TODOS">TODOS</option>
+            {estadosUnicos.map((e: string) => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </div>
+      </div>
+
       {/* Controles de Selección */}
       <div className="flex flex-col md:flex-row gap-4 bg-[#121212] border border-yellow-500/20 p-4 rounded-md shadow-lg relative">
         <button 
