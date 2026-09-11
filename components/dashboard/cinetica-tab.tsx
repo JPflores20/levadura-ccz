@@ -86,16 +86,16 @@ export function CineticaTab() {
   // 1. Tarjetas de inicio de fermentación
   const kpiData = [
     { id: "glucosa", label: "% Glucosa", value: formatKpi(getValFirst(filteredData, ["Glucosa"])), unit: "%", icon: "Percent", status: "ok" },
-    { id: "fan", label: "FAN Mosto", value: formatKpi(getValFirst(filteredData, ["FAN Mosto"])), unit: "mg/L", icon: "FlaskConical", status: "ok" },
+    { id: "fan", label: "FAN Mosto", value: formatKpi(getValFirst(filteredData, ["FAN Mosto", "FAN"])), unit: "mg/L", icon: "FlaskConical", status: "ok" },
     { id: "el", label: "E.L", value: formatKpi(getValFirst(filteredData, ["E.L", "Extracto Limite"])), unit: "°P", icon: "Gauge", status: "ok" },
     { id: "conteo", label: "Conteo Llenado", value: formatKpi(getValFirst(filteredData, ["Conteo de Celulas", "Conteo"])), unit: "x10^6", icon: "Activity", status: "ok" },
-    { id: "temp", label: "Temp Llenado", value: formatKpi(getValFirst(filteredData, ["Temperatura de Llenado"])), unit: "°C", icon: "Thermometer", status: "ok" },
-    { id: "tiempo", label: "Tiempo Llenado", value: formatKpi(getValFirst(filteredData, ["Tiempo de Llenado"])), unit: "h", icon: "Clock", status: "ok" },
-    { id: "aireacion", label: "Aireación", value: formatKpi(getValFirst(filteredData, ["Aireacion"])), unit: "kg/hl", icon: "Wind", status: "ok" },
+    { id: "temp", label: "Temp Llenado", value: formatKpi(getValFirst(filteredData, ["Temperatura de Llenado", "Temp. Llenado", "Temp"])), unit: "°C", icon: "Thermometer", status: "ok" },
+    { id: "tiempo", label: "Tiempo Llenado", value: formatKpi(getValFirst(filteredData, ["Tiempo de Llenado", "Tiempo"])), unit: "h", icon: "Clock", status: "ok" },
+    { id: "aireacion", label: "Aireación", value: formatKpi(getValFirst(filteredData, ["Aireacion", "Aireación"])), unit: "kg/hl", icon: "Wind", status: "ok" },
     { id: "tempAlm", label: "Temp Almacenaje", value: formatKpi(getValFirst(filteredData, ["Temperatura de Almacenamiento", "Almacenamiento"])), unit: "°C", icon: "Thermometer", status: "ok" },
     { id: "tiempoAlm", label: "Tiempo Almacenaje", value: formatKpi(getValFirst(filteredData, ["Tiempo de Almacenamiento"])), unit: "h", icon: "Clock", status: "ok" },
     { id: "viab", label: "Viabilidad", value: formatKpi(getValFirst(filteredData, ["Viabilidad Primera", "Viabilidad Primer", "Viabilidad"])), unit: "%", icon: "Activity", status: "ok" },
-    { id: "vitalidad", label: "Vitalidad", value: formatKpi(getValFirst(filteredData, ["Vitalidad", "Celulas Vigorosas"])), unit: "%", icon: "Activity", status: "ok" }
+    { id: "vitalidad", label: "Vitalidad", value: formatKpi(getValFirst(filteredData, ["Vitalidad", "Celulas Vigorosas", "Vigorosas"])), unit: "%", icon: "Activity", status: "ok" }
   ]
 
   // 2. Tabla de Capacidad de Proceso
