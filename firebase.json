@@ -25,7 +25,10 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "functions"
+        "functions",
+        ".next",
+        "out",
+        "extract"
       ]
     },
     {
@@ -36,7 +39,10 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "functions"
+        "functions",
+        ".next",
+        "out",
+        "extract"
       ]
     }
   ]

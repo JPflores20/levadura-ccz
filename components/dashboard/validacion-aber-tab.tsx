@@ -23,25 +23,48 @@ export function ValidacionAberTab() {
   
   const rawData = dbData?.rawData || []
 
-  // Correlation Data (Scatter Plot)
-  const correlationData = rawData.map((d: any) => ({
-    linea: d.linea,
-    fecha: d.fecha,
-    conteoAber: d.conteoAber,
-    conteoLac: d.conteoLacAvg,
-    diferencia: d.diferencia
-  }))
+  // Normalizar datos para manejar tanto el formato viejo como el nuevo (directo del Excel)
+  const normalizedData = rawData.map((d: any) => {
+    // Helper para buscar múltiples keys
+    const getNum = (keys: string[]) => {
+      for(const k of keys) {
+        if (d[k] !== undefined && d[k] !== null && d[k] !== "") {
+          const val = parseFloat(d[k])
+          if (!isNaN(val)) return val;
+        }
+      }
+      return null;
+    }
 
-  // Filtramos por línea (Asegúrate de que tu API devuelva "LINEA 1" o ajústalo si devuelve solo el número "1")
+    const linea = String(d.linea || d.Linea || d["LINEA"] || d["LINEA "] || "N/A").trim()
+    const fecha = String(d.fecha || d.Fecha || d["FECHA "] || d["FECHA"] || "N/A").trim()
+    const conteoAber = getNum(["conteoAber", "Aber", "CONTEO ABER B.F", "CONTEO EN EL ABER", "CONTEO ABER"])
+    const conteoLac = getNum(["conteoLacAvg", "conteoLac", "ConteoLac", "PROMEDIO DE CONTEO LAC", "PROMEDIO DE CONTEO LAC "])
+    const diferencia = getNum(["diferencia", "Diferencia", "DIFERENCIA ", "DIFERENCIA"])
+    const solidosAvg = getNum(["solidosAvg", "solidos", "Solidos", "% Solidos", "PROMEDIO DE % SOLIDOS", "PROMEDIO DE % SOLIDOS "])
+
+    return {
+      linea,
+      fecha,
+      conteoAber,
+      conteoLac,
+      diferencia,
+      solidosAvg
+    }
+  }).filter((d: any) => d.conteoAber !== null && d.conteoLac !== null)
+
+  const correlationData = normalizedData
+
+  // Filtramos por línea
   const correlationLinea1 = correlationData.filter((d: any) => String(d.linea).includes("1"))
   const correlationLinea2 = correlationData.filter((d: any) => String(d.linea).includes("2"))
 
   // Line Chart Data for Diferencia over time
   // Agrupar por fecha
-  const fechasUnicas = Array.from(new Set(rawData.map((d: any) => d.fecha))) as string[]
+  const fechasUnicas = Array.from(new Set(normalizedData.map((d: any) => d.fecha))) as string[]
   const diffOverTimeData = fechasUnicas.map(f => {
-    const l1 = rawData.find((d: any) => d.fecha === f && String(d.linea).includes("1"))
-    const l2 = rawData.find((d: any) => d.fecha === f && String(d.linea).includes("2"))
+    const l1 = normalizedData.find((d: any) => d.fecha === f && String(d.linea).includes("1"))
+    const l2 = normalizedData.find((d: any) => d.fecha === f && String(d.linea).includes("2"))
     return {
       fecha: f,
       diffL1: l1 ? l1.diferencia : null,
