@@ -13,10 +13,15 @@ import { CellCountChart } from "./propagation/cell-count-chart"
 import { ExecutiveReport } from "./propagation/executive-report"
 import { formatExcelDate } from "@/lib/utils"
 import useSWR from 'swr'
+
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export function PropagationTab() {
   const [realData, setRealData] = useState<any>(null)
+
+  // Nuevo estado para el filtro de Código de Cultivo
+  const [filterCodigos, setFilterCodigos] = useState<string[]>([])
+  const [isOpenCodigos, setIsOpenCodigos] = useState(false)
 
   const [filterFechas, setFilterFechas] = useState<string[]>([])
   const [isOpenFechas, setIsOpenFechas] = useState(false)
@@ -45,6 +50,8 @@ export function PropagationTab() {
     fecha: formatExcelDate(d.fecha)
   }))
   
+  // Agregamos la extracción de códigos únicos
+  const uniqueCodigos = Array.from(new Set(rawDataRaw.map((d: any) => (d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo)?.toString().trim().toUpperCase()))).filter(c => c && c !== "N/A" && c !== "UNDEFINED") as string[]
   const uniqueFechas = Array.from(new Set(rawDataRaw.map((d: any) => d.fecha?.toString().trim()))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
   const uniqueTipos = Array.from(new Set(rawDataRaw.map((d: any) => d.tipoLev?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
   const uniqueTanques = Array.from(new Set(rawDataRaw.map((d: any) => d.tanque?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
@@ -52,11 +59,15 @@ export function PropagationTab() {
 
   // Apply filters
   const rawData = rawDataRaw.filter((d: any) => {
+    const dCodigo = (d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo)?.toString().trim().toUpperCase()
     const dFecha = d.fecha?.toString().trim()
     const dTipo = d.tipoLev?.toString().trim().toUpperCase()
     const dTanque = d.tanque?.toString().trim().toUpperCase()
     const dDobleteo = (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()
 
+    // Filtramos por el Código primero
+    if (filterCodigos.length > 0 && !filterCodigos.includes(dCodigo)) return false
+    
     if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
     if (filterTipos.length > 0 && !filterTipos.includes(dTipo)) return false
     if (filterTanques.length > 0 && !filterTanques.includes(dTanque)) return false
@@ -91,7 +102,7 @@ export function PropagationTab() {
   }
 
   const getDynamicLast = (key: string) => {
-    const lastValid = [...propagationPoints].reverse().find(p => p[key] > 0)
+    const lastValid = [...propagationPoints].reverse().find((p: any) => p[key] > 0)
     return lastValid ? lastValid[key] : null
   }
 
@@ -163,7 +174,7 @@ export function PropagationTab() {
 
   return (
     <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg" id="capture-dashboard">
-      <div className="flex justify-between items-center bg-[#121212] border border-yellow-500/20 rounded-md p-2">
+      <div className="flex flex-col xl:flex-row justify-between xl:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-4 relative">
         <div className="flex items-center gap-4">
           <div className="text-yellow-500 text-xs font-bold uppercase tracking-wider">
             Filtros de Lote
@@ -177,7 +188,66 @@ export function PropagationTab() {
             Captura
           </button>
         </div>
+        
         <div className="flex flex-wrap items-center gap-4">
+          
+          {/* NUEVO FILTRO: Código de Cultivo */}
+          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenCodigos(false)}>
+            <label className="text-yellow-500/80 text-xs font-bold uppercase tracking-wider">Código de Cultivo:</label>
+            <div className="relative">
+              <button 
+                onClick={() => setIsOpenCodigos(!isOpenCodigos)} 
+                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
+              >
+                <span className="truncate">
+                  {filterCodigos.length === 0 ? "(Todos)" : `${filterCodigos.length} seleccionados`}
+                </span>
+                <span className="ml-2 text-[10px]">▼</span>
+              </button>
+              
+              {isOpenCodigos && (
+                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
+                  {uniqueCodigos.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
+                  
+                  {uniqueCodigos.length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterCodigos.length === 0} 
+                        onChange={() => setFilterCodigos([])} 
+                      />
+                      (Todos)
+                    </label>
+                  )}
+
+                  {uniqueCodigos.map(c => (
+                    <label key={c} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
+                      <input 
+                        type="checkbox" 
+                        className="accent-yellow-500"
+                        checked={filterCodigos.length === 0 || filterCodigos.includes(c)} 
+                        onChange={() => {
+                          if (filterCodigos.length === 0) {
+                            setFilterCodigos([c])
+                          } else {
+                            if (filterCodigos.includes(c)) {
+                              setFilterCodigos(filterCodigos.filter(v => v !== c))
+                            } else {
+                              setFilterCodigos([...filterCodigos, c])
+                            }
+                          }
+                        }} 
+                      />
+                      {c}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* FILTRO: Fecha */}
           <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenFechas(false)}>
             <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Fecha:</label>
             <div className="relative">
@@ -233,6 +303,7 @@ export function PropagationTab() {
             </div>
           </div>
           
+          {/* FILTRO: Tipo de Lev */}
           <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTipos(false)}>
             <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tipo de Lev:</label>
             <div className="relative">
@@ -282,6 +353,7 @@ export function PropagationTab() {
             </div>
           </div>
           
+          {/* FILTRO: Tanque */}
           <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTanques(false)}>
             <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tanque:</label>
             <div className="relative">
@@ -331,6 +403,7 @@ export function PropagationTab() {
             </div>
           </div>
           
+          {/* FILTRO: Dobleteo */}
           <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenDobleteo(false)}>
             <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Dobleteo:</label>
             <div className="relative">
@@ -379,6 +452,7 @@ export function PropagationTab() {
               )}
             </div>
           </div>
+
         </div>
       </div>
 

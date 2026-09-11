@@ -130,7 +130,7 @@ export function ComparacionTab() {
 
   // Combinar los datos por índice
   const maxLen = Math.max(batchDataA.length, batchDataB.length)
-  const kineticsData = []
+  const kineticsData: any[] = [] // AQUÍ SE CORRIGIÓ EL ERROR DE TYPESCRIPT
   
   for (let i = 0; i < maxLen; i++) {
     const a = batchDataA[i]

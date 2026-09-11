@@ -1,16 +1,20 @@
 "use client"
+
 import React, { useState } from "react"
 import useSWR from 'swr'
 import { ExcelProcessorAber } from "./cultivo/excel-processor-aber"
 import { ExpandableCard } from "./expandable-card"
 import * as htmlToImage from 'html-to-image'
 import { Camera } from 'lucide-react'
-import { ScatterChart, Scatter, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis } from "recharts"
+import { 
+  ScatterChart, Scatter, LineChart, Line, BarChart, Bar, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis 
+} from "recharts"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-export function CultivoTab() {
+export function ValidacionAberTab() {
   const { data: dbData } = useSWR('/api/get-aber', fetcher, { 
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -28,15 +32,16 @@ export function CultivoTab() {
     diferencia: d.diferencia
   }))
 
-  const correlationLinea1 = correlationData.filter((d: any) => d.linea === "LINEA 1")
-  const correlationLinea2 = correlationData.filter((d: any) => d.linea === "LINEA 2")
+  // Filtramos por línea (Asegúrate de que tu API devuelva "LINEA 1" o ajústalo si devuelve solo el número "1")
+  const correlationLinea1 = correlationData.filter((d: any) => String(d.linea).includes("1"))
+  const correlationLinea2 = correlationData.filter((d: any) => String(d.linea).includes("2"))
 
   // Line Chart Data for Diferencia over time
   // Agrupar por fecha
   const fechasUnicas = Array.from(new Set(rawData.map((d: any) => d.fecha))) as string[]
   const diffOverTimeData = fechasUnicas.map(f => {
-    const l1 = rawData.find((d: any) => d.fecha === f && d.linea === "LINEA 1")
-    const l2 = rawData.find((d: any) => d.fecha === f && d.linea === "LINEA 2")
+    const l1 = rawData.find((d: any) => d.fecha === f && String(d.linea).includes("1"))
+    const l2 = rawData.find((d: any) => d.fecha === f && String(d.linea).includes("2"))
     return {
       fecha: f,
       diffL1: l1 ? l1.diferencia : null,
@@ -48,8 +53,10 @@ export function CultivoTab() {
 
   // Ideal Line para Scatter Plot
   const maxVal = Math.max(
-    ...correlationData.map((d: any) => Math.max(d.conteoAber, d.conteoLac))
+    ...correlationData.map((d: any) => Math.max(d.conteoAber || 0, d.conteoLac || 0)),
+    0
   )
+  
   const idealLine = [
     { conteoAber: 0, conteoLac: 0 },
     { conteoAber: maxVal, conteoLac: maxVal }
@@ -60,10 +67,14 @@ export function CultivoTab() {
       const data = payload[0].payload;
       return (
         <div style={tooltipStyle.contentStyle} className="p-2 border border-yellow-500/50 bg-black">
-          <p className="font-bold text-yellow-500 mb-1">{data.linea} ({data.fecha})</p>
-          <p className="text-xs">ABER: <span className="text-white">{data.conteoAber.toFixed(1)}</span></p>
-          <p className="text-xs">LAC (Manual): <span className="text-white">{data.conteoLac.toFixed(1)}</span></p>
-          <p className="text-xs mt-1 pt-1 border-t border-zinc-700">Diferencia: <span className={data.diferencia > 0 ? 'text-red-400' : 'text-green-400'}>{data.diferencia.toFixed(1)}</span></p>
+          <p className="font-bold text-yellow-500 mb-1">Línea {data.linea} ({data.fecha})</p>
+          <p className="text-xs">ABER: <span className="text-white">{data.conteoAber?.toFixed(1)}</span></p>
+          <p className="text-xs">LAC (Manual): <span className="text-white">{data.conteoLac?.toFixed(1)}</span></p>
+          <p className="text-xs mt-1 pt-1 border-t border-zinc-700">
+            Diferencia: <span className={data.diferencia > 0 ? 'text-red-400' : 'text-green-400'}>
+              {data.diferencia?.toFixed(1)}
+            </span>
+          </p>
         </div>
       );
     }
@@ -71,7 +82,7 @@ export function CultivoTab() {
   };
 
   const handleCapture = async () => {
-    const element = document.getElementById('capture-cultivo');
+    const element = document.getElementById('capture-validacion-aber');
     if (!element) return;
     try {
       const dataUrl = await htmlToImage.toPng(element, {
@@ -88,7 +99,7 @@ export function CultivoTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-cultivo">
+    <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-validacion-aber">
       {/* Header and Upload */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 relative">
         <button 

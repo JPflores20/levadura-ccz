@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useState } from "react"
 import { ExcelProcessorKinetics } from "./kinetics/excel-processor-kinetics"
 import useSWR from 'swr'
@@ -112,13 +113,15 @@ export function CineticaTab() {
   ]
 
   const tableData = compoundsTable.map(comp => {
-    const vals = filteredData.map((d: any) => getValSingle(d, comp.keys)).filter(v => v > 0)
+    // Solución al error ts(7006): especificar (v: number)
+    const vals = filteredData.map((d: any) => getValSingle(d, comp.keys)).filter((v: number) => v > 0)
     return {
       name: comp.name,
-      avg: vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : "0",
+      // Solución al error ts(7006): especificar (a: number, b: number)
+      avg: vals.length ? (vals.reduce((a: number, b: number) => a + b, 0) / vals.length).toFixed(2) : "0",
       min: vals.length ? Math.min(...vals).toFixed(2) : "0",
       max: vals.length ? Math.max(...vals).toFixed(2) : "0",
-      last: vals.length ? vals[vals.length-1].toFixed(2) : "0"
+      last: vals.length ? vals[vals.length - 1].toFixed(2) : "0"
     }
   })
 

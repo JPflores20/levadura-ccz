@@ -6,8 +6,8 @@ import { PropagationTab } from "@/components/dashboard/propagation-tab"
 import { CineticaTab } from "@/components/dashboard/cinetica-tab"
 import { ComparacionTab } from "@/components/dashboard/comparacion-tab"
 import { Comparacion4vTab } from "@/components/dashboard/comparacion-4v-tab"
-
-import { CultivoTab } from "@/components/dashboard/cultivo-tab"
+// Importación corregida con el nuevo nombre del componente
+import { ValidacionAberTab } from "@/components/dashboard/validacion-aber-tab"
 
 function PlaceholderTab({ title }: { title: string }) {
   return (
@@ -43,6 +43,11 @@ export default function Page() {
                 <BarChart3 data-icon="inline-start" className="text-yellow-500" />
                 Comparación cinéticas
               </TabsTrigger>
+              {/* Nuevo TabsTrigger para Validación Aber */}
+              <TabsTrigger value="validacion-aber" className="data-active:border-yellow-500/40">
+                <FlaskConical data-icon="inline-start" className="text-yellow-500" />
+                Validación Aber
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -57,6 +62,10 @@ export default function Page() {
           </TabsContent>
           <TabsContent value="comparacion-4v" className="mt-3">
             <Comparacion4vTab />
+          </TabsContent>
+          {/* Nuevo TabsContent para renderizar la pestaña */}
+          <TabsContent value="validacion-aber" className="mt-3">
+            <ValidacionAberTab />
           </TabsContent>
         </Tabs>
       </div>

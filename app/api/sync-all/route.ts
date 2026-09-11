@@ -17,7 +17,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { propagacion, cineticas, cheetah } = await request.json()
+    const { propagacion, cineticas } = await request.json()
 
     if (!propagacion || !cineticas) {
       return NextResponse.json({ error: "Faltan hojas en el payload" }, { status: 400, headers: corsHeaders })
@@ -42,14 +42,6 @@ export async function POST(request: Request) {
     }
     await setDoc(doc(firestoreDatabase, "dashboards", "kinetics_stats"), dataCineticas).catch(() => {})
     try { fs.writeFileSync(path.join(process.cwd(), 'database_kinetics.json'), JSON.stringify(dataCineticas, null, 2)) } catch(e){}
-
-    // 3. PROCESAR CHEETAH
-    const dataCheetah = {
-      ultimaActualizacion: new Date().toISOString(),
-      rawData: cheetah || []
-    }
-    await setDoc(doc(firestoreDatabase, "dashboards", "aber_stats"), dataCheetah).catch(() => {})
-    try { fs.writeFileSync(path.join(process.cwd(), 'database_aber.json'), JSON.stringify(dataCheetah, null, 2)) } catch(e){}
 
     return NextResponse.json({ success: true, message: "Todas las hojas procesadas" }, { headers: corsHeaders })
   } catch (error) {
@@ -84,16 +76,36 @@ function procesarPropagacion(data: any[]) {
 
 function procesarCineticas(rows: any[]) {
     const groupedData: Record<string, any> = {}
-    const compuestos = ["Acetaldehido", "Diacetilo total", "Acetato de etilo", "Propanol", "Isobutaol", "Acetato de isoamilo", "Isoamil alcohol", "Alcoholes Superiores", "Esteres"]
+    const compuestos = ["Acetaldehido", "Diacetilo", "Acetato de etilo", "Propanol", "Isobutaol", "Isobutanol", "Acetato de isoamilo", "Isoamil alcohol", "Alcohol isoamilico", "Alcoholes Superiores", "Esteres", "Ésteres"]
 
     rows.forEach(row => {
-        const fecha = row.Fecha || "N/A"; const cepa = row.Marca || "N/A"; const etapa = row.Etapa || "FERMENTACION";
-        const vuelta = row.Vuelta || row["Vuelta de la levadura"]; const propagacion = "N/A"
+        // Case-insensitive key lookup
+        const getVal = (keys: string[]) => {
+            for (let k of Object.keys(row)) {
+                if (keys.some(key => k.toLowerCase().includes(key.toLowerCase()))) return row[k];
+            }
+            return undefined;
+        }
+
+        const fecha = getVal(["Fecha"]) || "N/A"; 
+        const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
+        const etapa = getVal(["Etapa"]) || "FERMENTACION";
+        const vuelta = getVal(["Vuelta"]); 
+        const propagacion = "N/A"
+        
         if (!vuelta) return;
+        
         compuestos.forEach(volatil => {
-            const val = parseFloat(row[volatil])
+            const rowVal = getVal([volatil]);
+            const val = parseFloat(rowVal)
             if (!isNaN(val)) {
                 let volatilLimpio = volatil.toUpperCase().includes("DIACETILO") ? "DIACETILO" : volatil.toUpperCase()
+                if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
+                if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
+                if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
+                if (volatilLimpio.includes("ETILO")) volatilLimpio = "ETILO";
+                if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
+
                 const key = `${fecha}_${propagacion}_${cepa}_${volatilLimpio}_${etapa}`
                 if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, volatil: volatilLimpio, etapa, vueltas: {} }
                 groupedData[key].vueltas[vuelta.toString()] = val
