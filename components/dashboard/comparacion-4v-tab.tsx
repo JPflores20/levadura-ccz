@@ -150,16 +150,16 @@ export function Comparacion4vTab() {
         <Tooltip contentStyle={tooltipStyle.contentStyle} formatter={customFormatter} />
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
         
-        {/* Diacetilo (Left Axis) - Colors: Blue/Red */}
-        <Line yAxisId="left" type="monotone" name={`Diac. Tanque A`} dataKey="diac_A" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        {/* Diacetilo (Left Axis) - Color: Amarillo (Mantequilla) */}
+        <Line yAxisId="left" type="monotone" name={`Diac. Tanque A`} dataKey="diac_A" stroke="#eab308" strokeWidth={4} dot={{ r: 4 }} connectNulls />
         {tanqueB.map((tB, idx) => (
-          <Line key={`diac_B_${idx}`} yAxisId="left" type="monotone" name={`Diac. Tanque B (${tB})`} dataKey={`diac_B_${idx}`} stroke={getColorB(idx)} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+          <Line key={`diac_B_${idx}`} yAxisId="left" type="monotone" name={`Diac. Tanque B (${tB})`} dataKey={`diac_B_${idx}`} stroke="#fef08a" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
         ))}
 
-        {/* Acetaldehído (Right Axis) - Colors: Green/Yellow */}
-        <Line yAxisId="right" type="monotone" name={`Acet. Tanque A`} dataKey="acet_A" stroke="#10b981" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        {/* Acetaldehído (Right Axis) - Color: Verde (Manzana) */}
+        <Line yAxisId="right" type="monotone" name={`Acet. Tanque A`} dataKey="acet_A" stroke="#22c55e" strokeWidth={4} dot={{ r: 4 }} connectNulls />
         {tanqueB.map((tB, idx) => (
-          <Line key={`acet_B_${idx}`} yAxisId="right" type="monotone" name={`Acet. Tanque B (${tB})`} dataKey={`acet_B_${idx}`} stroke={getColorB(idx)} strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+          <Line key={`acet_B_${idx}`} yAxisId="right" type="monotone" name={`Acet. Tanque B (${tB})`} dataKey={`acet_B_${idx}`} stroke="#86efac" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
         ))}
       </LineChart>
     </ResponsiveContainer>
@@ -175,16 +175,16 @@ export function Comparacion4vTab() {
         <Tooltip contentStyle={tooltipStyle.contentStyle} formatter={customFormatter} />
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
         
-        {/* Esteres (Left Axis) */}
-        <Line yAxisId="left" type="monotone" name={`Est. Tanque A`} dataKey="est_A" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+        {/* Esteres (Left Axis) - Color: Rojo */}
+        <Line yAxisId="left" type="monotone" name={`Est. Tanque A`} dataKey="est_A" stroke="#ef4444" strokeWidth={4} dot={{ r: 4 }} connectNulls />
         {tanqueB.map((tB, idx) => (
-          <Line key={`est_B_${idx}`} yAxisId="left" type="monotone" name={`Est. Tanque B (${tB})`} dataKey={`est_B_${idx}`} stroke={getColorB(idx)} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+          <Line key={`est_B_${idx}`} yAxisId="left" type="monotone" name={`Est. Tanque B (${tB})`} dataKey={`est_B_${idx}`} stroke="#fca5a5" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
         ))}
 
-        {/* Alcoholes (Right Axis) */}
-        <Line yAxisId="right" type="monotone" name={`Alc. Tanque A`} dataKey="alc_A" stroke="#06b6d4" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        {/* Alcoholes (Right Axis) - Color: Azul */}
+        <Line yAxisId="right" type="monotone" name={`Alc. Tanque A`} dataKey="alc_A" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4 }} connectNulls />
         {tanqueB.map((tB, idx) => (
-          <Line key={`alc_B_${idx}`} yAxisId="right" type="monotone" name={`Alc. Tanque B (${tB})`} dataKey={`alc_B_${idx}`} stroke={getColorB(idx)} strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+          <Line key={`alc_B_${idx}`} yAxisId="right" type="monotone" name={`Alc. Tanque B (${tB})`} dataKey={`alc_B_${idx}`} stroke="#93c5fd" strokeDasharray="4 4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
         ))}
       </LineChart>
     </ResponsiveContainer>
