@@ -1,14 +1,14 @@
 "use client"
 import { useEffect, useState } from "react"
 import { KpiCard } from "@/components/dashboard/kpi-card"
+import { CheckboxFilter } from "./checkbox-filter"
+import { CalendarFilter } from "./calendar-filter"
 import { kpis as mockKpis } from "@/lib/mock-data"
 import { CapabilityTable } from "./propagation/capability-table"
 import { ViabilityChart } from "./propagation/viability-chart"
 import { VitalityCompositionChart } from "./propagation/vitality-composition-chart"
 import { CorrelationScatterGrid } from "./propagation/correlation-scatter-grid"
 import { CultureSummaryColumn } from "./comparison/culture-summary-column"
-import * as htmlToImage from 'html-to-image'
-import { Camera } from 'lucide-react'
 import { CellCountChart } from "./propagation/cell-count-chart"
 import { ExecutiveReport } from "./propagation/executive-report"
 import { formatExcelDate } from "@/lib/utils"
@@ -87,6 +87,8 @@ export function PropagationTab() {
     solidos: d.solidos || 0,
     ph: d.ph || 0,
     temp: d.temp || 20,
+    debiles: d.debiles,
+    muertas: d.muertas,
     aireacion: 10 + (Math.sin(i) * 2),
     zn: 0.15
   }))
@@ -155,304 +157,17 @@ export function PropagationTab() {
   const row1And2 = displayKpis.slice(0, 8)
   const row3 = displayKpis.slice(8)
 
-  const handleCapture = async () => {
-    const element = document.getElementById('capture-dashboard');
-    if (!element) return;
-    try {
-      const dataUrl = await htmlToImage.toPng(element, {
-        backgroundColor: '#0a0a0a',
-        pixelRatio: 2
-      });
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `Reporte-Propagacion-${new Date().toISOString().split('T')[0]}.png`;
-      link.click();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
   return (
-    <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg" id="capture-dashboard">
+    <div className="flex flex-col gap-3 min-w-0 bg-[#0a0a0a] p-2 rounded-lg">
       <div className="flex flex-col xl:flex-row justify-between xl:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-4 relative">
-        <div className="flex items-center gap-4">
-          <div className="text-yellow-500 text-xs font-bold uppercase tracking-wider">
-            Filtros de Lote
-          </div>
-          <button 
-            onClick={handleCapture}
-            className="flex items-center gap-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold"
-            title="Capturar pantalla del dashboard"
-          >
-            <Camera size={12} />
-            Captura
-          </button>
-        </div>
+
         
-        <div className="flex flex-wrap items-center gap-4">
-          
-          {/* NUEVO FILTRO: Código de Cultivo */}
-          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenCodigos(false)}>
-            <label className="text-yellow-500/80 text-xs font-bold uppercase tracking-wider">Código de Cultivo:</label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsOpenCodigos(!isOpenCodigos)} 
-                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
-              >
-                <span className="truncate">
-                  {filterCodigos.length === 0 ? "(Todos)" : `${filterCodigos.length} seleccionados`}
-                </span>
-                <span className="ml-2 text-[10px]">▼</span>
-              </button>
-              
-              {isOpenCodigos && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
-                  {uniqueCodigos.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
-                  
-                  {uniqueCodigos.length > 0 && (
-                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterCodigos.length === 0} 
-                        onChange={() => setFilterCodigos([])} 
-                      />
-                      (Todos)
-                    </label>
-                  )}
-
-                  {uniqueCodigos.map(c => (
-                    <label key={c} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterCodigos.length === 0 || filterCodigos.includes(c)} 
-                        onChange={() => {
-                          if (filterCodigos.length === 0) {
-                            setFilterCodigos([c])
-                          } else {
-                            if (filterCodigos.includes(c)) {
-                              setFilterCodigos(filterCodigos.filter(v => v !== c))
-                            } else {
-                              setFilterCodigos([...filterCodigos, c])
-                            }
-                          }
-                        }} 
-                      />
-                      {c}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* FILTRO: Fecha */}
-          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenFechas(false)}>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Fecha:</label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsOpenFechas(!isOpenFechas)} 
-                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
-              >
-                <span className="truncate">
-                  {filterFechas.length === 0 ? "(Todas)" : `${filterFechas.length} seleccionadas`}
-                </span>
-                <span className="ml-2 text-[10px]">▼</span>
-              </button>
-              
-              {isOpenFechas && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
-                  {uniqueFechas.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
-                  
-                  {uniqueFechas.length > 0 && (
-                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterFechas.length === 0} 
-                        onChange={() => setFilterFechas([])} 
-                      />
-                      (Todas)
-                    </label>
-                  )}
-
-                  {uniqueFechas.map(f => (
-                    <label key={f} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterFechas.length === 0 || filterFechas.includes(f)} 
-                        onChange={() => {
-                          if (filterFechas.length === 0) {
-                            setFilterFechas([f])
-                          } else {
-                            if (filterFechas.includes(f)) {
-                              setFilterFechas(filterFechas.filter(v => v !== f))
-                            } else {
-                              setFilterFechas([...filterFechas, f])
-                            }
-                          }
-                        }} 
-                      />
-                      {f}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* FILTRO: Tipo de Lev */}
-          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTipos(false)}>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tipo de Lev:</label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsOpenTipos(!isOpenTipos)} 
-                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
-              >
-                <span className="truncate">
-                  {filterTipos.length === 0 ? "(Todos)" : `${filterTipos.length} seleccionados`}
-                </span>
-                <span className="ml-2 text-[10px]">▼</span>
-              </button>
-              
-              {isOpenTipos && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
-                  {uniqueTipos.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
-                  
-                  {uniqueTipos.length > 0 && (
-                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterTipos.length === 0} 
-                        onChange={() => setFilterTipos([])} 
-                      />
-                      (Todos)
-                    </label>
-                  )}
-
-                  {uniqueTipos.map(t => (
-                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterTipos.length === 0 || filterTipos.includes(t)} 
-                        onChange={() => {
-                          if (filterTipos.length === 0) setFilterTipos([t])
-                          else if (filterTipos.includes(t)) setFilterTipos(filterTipos.filter(v => v !== t))
-                          else setFilterTipos([...filterTipos, t])
-                        }} 
-                      />
-                      {t}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* FILTRO: Tanque */}
-          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenTanques(false)}>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Tanque:</label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsOpenTanques(!isOpenTanques)} 
-                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
-              >
-                <span className="truncate">
-                  {filterTanques.length === 0 ? "(Todos)" : `${filterTanques.length} seleccionados`}
-                </span>
-                <span className="ml-2 text-[10px]">▼</span>
-              </button>
-              
-              {isOpenTanques && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
-                  {uniqueTanques.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
-                  
-                  {uniqueTanques.length > 0 && (
-                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterTanques.length === 0} 
-                        onChange={() => setFilterTanques([])} 
-                      />
-                      (Todos)
-                    </label>
-                  )}
-
-                  {uniqueTanques.map(t => (
-                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterTanques.length === 0 || filterTanques.includes(t)} 
-                        onChange={() => {
-                          if (filterTanques.length === 0) setFilterTanques([t])
-                          else if (filterTanques.includes(t)) setFilterTanques(filterTanques.filter(v => v !== t))
-                          else setFilterTanques([...filterTanques, t])
-                        }} 
-                      />
-                      {t}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* FILTRO: Dobleteo */}
-          <div className="flex items-center gap-2" onMouseLeave={() => setIsOpenDobleteo(false)}>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider">Dobleteo:</label>
-            <div className="relative">
-              <button 
-                onClick={() => setIsOpenDobleteo(!isOpenDobleteo)} 
-                className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center"
-              >
-                <span className="truncate">
-                  {filterDobleteo.length === 0 ? "(Todos)" : `${filterDobleteo.length} seleccionados`}
-                </span>
-                <span className="ml-2 text-[10px]">▼</span>
-              </button>
-              
-              {isOpenDobleteo && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-zinc-700 rounded shadow-xl p-2 z-50 flex flex-col gap-1 min-w-[140px] max-h-60 overflow-y-auto">
-                  {uniqueDobleteo.length === 0 && <span className="text-zinc-500 text-xs">Sin datos</span>}
-                  
-                  {uniqueDobleteo.length > 0 && (
-                    <label className="flex items-center gap-2 text-sm text-yellow-500 font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded border-b border-zinc-700 pb-2 mb-1">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterDobleteo.length === 0} 
-                        onChange={() => setFilterDobleteo([])} 
-                      />
-                      (Todos)
-                    </label>
-                  )}
-
-                  {uniqueDobleteo.map(t => (
-                    <label key={t} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:bg-zinc-800 p-1.5 rounded">
-                      <input 
-                        type="checkbox" 
-                        className="accent-yellow-500"
-                        checked={filterDobleteo.length === 0 || filterDobleteo.includes(t)} 
-                        onChange={() => {
-                          if (filterDobleteo.length === 0) setFilterDobleteo([t])
-                          else if (filterDobleteo.includes(t)) setFilterDobleteo(filterDobleteo.filter(v => v !== t))
-                          else setFilterDobleteo([...filterDobleteo, t])
-                        }} 
-                      />
-                      {t}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
+        <div className="flex flex-wrap xl:flex-nowrap items-center justify-start xl:justify-end gap-2 w-full">
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
+          <CheckboxFilter label="Tipo de Lev" options={uniqueTipos} selectedOptions={filterTipos} onChange={setFilterTipos} isOpen={isOpenTipos} setIsOpen={setIsOpenTipos} />
+          <CheckboxFilter label="Código" options={uniqueCodigos} selectedOptions={filterCodigos} onChange={setFilterCodigos} isOpen={isOpenCodigos} setIsOpen={setIsOpenCodigos} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
+          <CheckboxFilter label="Dobleteo" options={uniqueDobleteo} selectedOptions={filterDobleteo} onChange={setFilterDobleteo} isOpen={isOpenDobleteo} setIsOpen={setIsOpenDobleteo} />
         </div>
       </div>
 

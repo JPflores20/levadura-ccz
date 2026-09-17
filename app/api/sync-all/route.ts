@@ -82,7 +82,8 @@ function procesarCineticas(rows: any[]) {
         // Case-insensitive key lookup
         const getVal = (keys: string[]) => {
             for (let k of Object.keys(row)) {
-                if (keys.some(key => k.toLowerCase().includes(key.toLowerCase()))) return row[k];
+                const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
+                if (keys.some(key => kClean.includes(key.toLowerCase().replace(/[\s\.]/g, '')))) return row[k];
             }
             return undefined;
         }
@@ -90,10 +91,11 @@ function procesarCineticas(rows: any[]) {
         const fecha = getVal(["Fecha"]) || "N/A"; 
         const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
         const etapa = getVal(["Etapa"]) || "FERMENTACION";
-        const vuelta = getVal(["Vuelta"]); 
-        const propagacion = "N/A"
+        const vuelta = row["Dias"] !== undefined ? row["Dias"] : (row["Días"] !== undefined ? row["Días"] : row["Día"] !== undefined ? row["Día"] : undefined);
+        const propagacion = "N/A";
+        const tanque = getVal(["Tanque", "TCC", "Lote", "Item"]) || "N/A";
         
-        if (!vuelta) return;
+        if (vuelta === undefined || vuelta === null || vuelta === "") return;
         
         compuestos.forEach(volatil => {
             const rowVal = getVal([volatil]);
@@ -103,11 +105,11 @@ function procesarCineticas(rows: any[]) {
                 if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
                 if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
                 if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
-                if (volatilLimpio.includes("ETILO")) volatilLimpio = "ETILO";
+                if (volatilLimpio === "ACETATO DE ETILO" || volatilLimpio === "ETILO") volatilLimpio = "ETILO";
                 if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
 
-                const key = `${fecha}_${propagacion}_${cepa}_${volatilLimpio}_${etapa}`
-                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, volatil: volatilLimpio, etapa, vueltas: {} }
+                const key = `${fecha}_${propagacion}_${cepa}_${tanque}_${volatilLimpio}_${etapa}`
+                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, tanque, volatil: volatilLimpio, etapa, vueltas: {} }
                 groupedData[key].vueltas[vuelta.toString()] = val
             }
         })

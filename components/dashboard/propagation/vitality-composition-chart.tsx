@@ -29,9 +29,8 @@ export function VitalityCompositionChart({ dynamicData }: { dynamicData?: any[] 
     chartData = dynamicData.map((p: any) => ({
       name: p.hora,
       vitales: p.vigorosas,
-      moderadas: p.viabilidad - p.vigorosas,
-      estresadas: (100 - p.viabilidad) * 0.6,
-      muertas: (100 - p.viabilidad) * 0.4
+      moderadas: p.debiles != null ? p.debiles : (p.viabilidad - p.vigorosas),
+      muertas: p.muertas != null ? p.muertas : ((100 - p.viabilidad) * 0.4)
     }))
   } else {
     // Mode Top 10
@@ -49,11 +48,10 @@ export function VitalityCompositionChart({ dynamicData }: { dynamicData?: any[] 
       const vig = p.vigorosas || 0
       return {
         name: key,
-        score: viab + vig,
         vitales: vig,
-        moderadas: viab - vig,
-        estresadas: (100 - viab) * 0.6,
-        muertas: (100 - viab) * 0.4
+        moderadas: p.debiles != null ? p.debiles : (viab - vig),
+        muertas: p.muertas != null ? p.muertas : ((100 - viab) * 0.4),
+        score: (viab * 0.4) + (vig * 0.6)
       }
     })
 
@@ -81,7 +79,7 @@ export function VitalityCompositionChart({ dynamicData }: { dynamicData?: any[] 
     >
       <div className="h-52 w-full relative shrink-0">
         <ResponsiveContainer width="99%" height="100%">
-          <BarChart id="prop-comp" data={chartData} stackOffset="expand" margin={{ top: 8, right: 12, bottom: mode === 'top10' ? 20 : 0, left: -12 }}>
+          <BarChart id="prop-comp" data={chartData} margin={{ top: 8, right: 12, bottom: mode === 'top10' ? 20 : 0, left: -12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
             <XAxis 
               dataKey="name" 
@@ -91,12 +89,11 @@ export function VitalityCompositionChart({ dynamicData }: { dynamicData?: any[] 
               textAnchor={mode === 'top10' ? "end" : "middle"}
               height={mode === 'top10' ? 50 : 30}
             />
-            <YAxis tickFormatter={(v) => `${Math.round(v * 100)}%`} {...axisProps} />
+            <YAxis domain={[50, 100]} allowDataOverflow={true} tickFormatter={(v) => `${Math.round(v)}%`} {...axisProps} />
             <Tooltip {...tooltipStyle} formatter={(v: number) => `${v.toFixed(1)}%`} cursor={{ fill: '#ffffff10' }} />
             <Legend wrapperStyle={{ fontSize: 10, color: "#888888" }} />
-            <Bar dataKey="moderadas" name="Vigorosas" stackId="a" fill="#eab308" />
-            <Bar dataKey="vitales" name="Muy Vigorosas" stackId="a" fill="#22c55e" />
-            <Bar dataKey="estresadas" name="Débiles" stackId="a" fill="#3b82f6" />
+            <Bar dataKey="moderadas" name="Débiles / Moderadas" stackId="a" fill="#eab308" />
+            <Bar dataKey="vitales" name="Vitales (Vig + Muy Vig)" stackId="a" fill="#22c55e" />
             <Bar dataKey="muertas" name="Muertas" stackId="a" fill="#ef4444" />
           </BarChart>
         </ResponsiveContainer>

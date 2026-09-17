@@ -55,7 +55,7 @@ export function TopNav() {
         </div>
         <div className="flex flex-col">
           <h1 className="text-sm font-bold tracking-widest text-white uppercase">
-            Sistema de Análisis de Levadura
+            Analisis de Levadura y Cineticas de Fermentacion- Reposo
           </h1>
           <span className="text-[10px] font-mono tracking-wide text-zinc-500">
             HMI · CERVECERÍA · v2.4

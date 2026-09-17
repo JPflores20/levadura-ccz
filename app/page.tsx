@@ -9,6 +9,8 @@ import { Comparacion4vTab } from "@/components/dashboard/comparacion-4v-tab"
 // Importación corregida con el nuevo nombre del componente
 import { ValidacionAberTab } from "@/components/dashboard/validacion-aber-tab"
 
+import { CaptureButton } from "@/components/dashboard/capture-button"
+
 function PlaceholderTab({ title }: { title: string }) {
   return (
     <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-yellow-600/30 bg-zinc-900 text-center">
@@ -23,9 +25,9 @@ export default function Page() {
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <TopNav />
 
-      <div className="p-2 md:p-3 max-w-[1920px] mx-auto">
+      <div className="p-2 md:p-3 max-w-[1920px] mx-auto" id="capture-dashboard">
         <Tabs defaultValue="propagacion">
-          <div className="w-full overflow-x-auto pb-1 -mb-1">
+          <div className="w-full flex justify-between items-center pb-1 -mb-1 overflow-x-auto gap-4">
             <TabsList className="border border-yellow-500/40 bg-[#121212] min-w-max">
               <TabsTrigger value="propagacion" className="data-active:border-yellow-500/40">
                 <Sprout data-icon="inline-start" className="text-yellow-500" />
@@ -43,12 +45,13 @@ export default function Page() {
                 <BarChart3 data-icon="inline-start" className="text-yellow-500" />
                 Comparación cinéticas
               </TabsTrigger>
-              {/* Nuevo TabsTrigger para Validación Aber */}
+              {/* Nuevo TabsTrigger para Auditoría Abber */}
               <TabsTrigger value="validacion-aber" className="data-active:border-yellow-500/40">
                 <FlaskConical data-icon="inline-start" className="text-yellow-500" />
-                Validación Aber
+                Auditoría Abber
               </TabsTrigger>
             </TabsList>
+            <CaptureButton />
           </div>
 
           <TabsContent value="propagacion" className="mt-3">

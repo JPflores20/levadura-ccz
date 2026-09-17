@@ -269,9 +269,9 @@ export const processVars: ProcessVar[] = [
 
 // Informe de capacidad (dona)
 export const capacidadData = [
-  { name: "Conformes", value: 78, fill: "#22c55e" },
-  { name: "Marginales", value: 15, fill: "#eab308" },
-  { name: "No conformes", value: 7, fill: "#ef4444" },
+  { name: "Excelentes", value: 78, fill: "#22c55e" },
+  { name: "Capaces", value: 15, fill: "#eab308" },
+  { name: "No capaces", value: 7, fill: "#ef4444" },
 ]
 
 export type Conclusion = { texto: string; tipo: "ok" | "warn" }

@@ -2,10 +2,9 @@
 
 import React, { useState } from "react"
 import useSWR from 'swr'
-import { ExcelProcessorAber } from "./cultivo/excel-processor-aber"
 import { ExpandableCard } from "./expandable-card"
-import * as htmlToImage from 'html-to-image'
-import { Camera } from 'lucide-react'
+import { CheckboxFilter } from "./checkbox-filter"
+import { CalendarFilter } from "./calendar-filter"
 import { 
   ScatterChart, Scatter, LineChart, Line, BarChart, Bar, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis 
@@ -23,6 +22,18 @@ export function ValidacionAberTab() {
   
   const rawData = dbData?.rawData || []
 
+  // Extract unique values for filters
+  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => String(d.fecha || d.Fecha || d["FECHA "] || d["FECHA"] || "").trim()))).filter(Boolean) as string[]
+  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => String(d.marca || d.Marca || d.cepa || d.Cepa || "").trim().toUpperCase()))).filter(Boolean) as string[]
+  const uniqueTanques = Array.from(new Set(rawData.map((d: any) => String(d.tanque || d.Tanque || d.TCC || d.Lote || d.Item || "").trim().toUpperCase()))).filter(Boolean) as string[]
+
+  const [filterFecha, setFilterFecha] = useState<string[]>([])
+  const [isOpenFecha, setIsOpenFecha] = useState(false)
+  const [filterMarca, setFilterMarca] = useState<string[]>([])
+  const [isOpenMarca, setIsOpenMarca] = useState(false)
+  const [filterTanque, setFilterTanque] = useState<string[]>([])
+  const [isOpenTanque, setIsOpenTanque] = useState(false)
+
   // Normalizar datos para manejar tanto el formato viejo como el nuevo (directo del Excel)
   const normalizedData = rawData.map((d: any) => {
     // Helper para buscar múltiples keys
@@ -38,6 +49,9 @@ export function ValidacionAberTab() {
 
     const linea = String(d.linea || d.Linea || d["LINEA"] || d["LINEA "] || "N/A").trim()
     const fecha = String(d.fecha || d.Fecha || d["FECHA "] || d["FECHA"] || "N/A").trim()
+    const marca = String(d.marca || d.Marca || d.cepa || d.Cepa || "").trim().toUpperCase()
+    const tanque = String(d.tanque || d.Tanque || d.TCC || d.Lote || d.Item || "").trim().toUpperCase()
+
     const conteoAber = getNum(["conteoAber", "Aber", "CONTEO ABER B.F", "CONTEO EN EL ABER", "CONTEO ABER"])
     const conteoLac = getNum(["conteoLacAvg", "conteoLac", "ConteoLac", "PROMEDIO DE CONTEO LAC", "PROMEDIO DE CONTEO LAC "])
     const diferencia = getNum(["diferencia", "Diferencia", "DIFERENCIA ", "DIFERENCIA"])
@@ -46,12 +60,20 @@ export function ValidacionAberTab() {
     return {
       linea,
       fecha,
+      marca,
+      tanque,
       conteoAber,
       conteoLac,
       diferencia,
       solidosAvg
     }
-  }).filter((d: any) => d.conteoAber !== null && d.conteoLac !== null)
+  }).filter((d: any) => {
+    if (d.conteoAber === null || d.conteoLac === null) return false;
+    if (filterFecha.length > 0 && !filterFecha.includes(d.fecha)) return false;
+    if (filterMarca.length > 0 && !filterMarca.includes(d.marca)) return false;
+    if (filterTanque.length > 0 && !filterTanque.includes(d.tanque)) return false;
+    return true;
+  })
 
   const correlationData = normalizedData
 
@@ -91,7 +113,7 @@ export function ValidacionAberTab() {
       return (
         <div style={tooltipStyle.contentStyle} className="p-2 border border-yellow-500/50 bg-black">
           <p className="font-bold text-yellow-500 mb-1">Línea {data.linea} ({data.fecha})</p>
-          <p className="text-xs">ABER: <span className="text-white">{data.conteoAber?.toFixed(1)}</span></p>
+          <p className="text-xs">Abber: <span className="text-white">{data.conteoAber?.toFixed(1)}</span></p>
           <p className="text-xs">LAC (Manual): <span className="text-white">{data.conteoLac?.toFixed(1)}</span></p>
           <p className="text-xs mt-1 pt-1 border-t border-zinc-700">
             Diferencia: <span className={data.diferencia > 0 ? 'text-red-400' : 'text-green-400'}>
@@ -104,57 +126,38 @@ export function ValidacionAberTab() {
     return null;
   };
 
-  const handleCapture = async () => {
-    const element = document.getElementById('capture-validacion-aber');
-    if (!element) return;
-    try {
-      const dataUrl = await htmlToImage.toPng(element, {
-        backgroundColor: '#0a0a0a',
-        pixelRatio: 2
-      });
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `Reporte-Sensores-ABER-${new Date().toISOString().split('T')[0]}.png`;
-      link.click();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg" id="capture-validacion-aber">
       {/* Header and Upload */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 relative">
-        <button 
-          onClick={handleCapture}
-          className="absolute -top-3 right-4 flex items-center gap-1.5 bg-[#0a0a0a] hover:bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] transition-colors uppercase font-bold z-10"
-          title="Capturar pantalla"
-        >
-          <Camera size={12} />
-          Captura
-        </button>
+        
         <div className="flex flex-col">
-          <h2 className="text-sm font-bold text-yellow-500 tracking-widest">VALIDACIÓN DE SENSORES ABER</h2>
-          <p className="text-xs text-zinc-400">Comparativa Conteo Automatizado vs Siembra Microbiológica</p>
+          <h2 className="text-sm font-bold text-yellow-500 tracking-widest">AUDITORÍA DE ABBERS</h2>
+          <p className="text-xs text-zinc-400">Comparación Medicion en Abber ( Equipo) vs Medicion en Vicell (laboratorio)</p>
         </div>
-        <ExcelProcessorAber />
+
+        <div className="flex gap-2 flex-wrap items-center">
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFecha} onChange={setFilterFecha} isOpen={isOpenFecha} setIsOpen={setIsOpenFecha} />
+          <CheckboxFilter label="Marca" options={uniqueMarcas} selectedOptions={filterMarca} onChange={setFilterMarca} isOpen={isOpenMarca} setIsOpen={setIsOpenMarca} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanque} onChange={setFilterTanque} isOpen={isOpenTanque} setIsOpen={setIsOpenTanque} />
+        </div>
       </div>
 
       {rawData.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/50">
-          <p className="text-sm font-medium text-zinc-400">Sube el archivo de Validación ABER para ver las métricas.</p>
+          <p className="text-sm font-medium text-zinc-400">Sube el archivo de Validación Abber para ver las métricas.</p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             {/* SCATTER PLOT CORRELATION */}
-            <ExpandableCard title="Correlación ABER vs Laboratorio">
+            <ExpandableCard title="Correlación Abber vs Laboratorio">
               <div className="text-xs text-zinc-400 mb-2 italic">Una calibración perfecta debería mostrar todos los puntos sobre la línea diagonal dorada.</div>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
-                  <XAxis type="number" dataKey="conteoAber" name="Conteo ABER" {...axisProps} label={{ value: 'Sensor ABER', position: 'insideBottom', offset: -10, fill: '#888' }} domain={[0, 'dataMax + 200']} />
+                  <XAxis type="number" dataKey="conteoAber" name="Conteo Abber" {...axisProps} label={{ value: 'Abber', position: 'insideBottom', offset: -10, fill: '#888' }} domain={[0, 'dataMax + 200']} />
                   <YAxis type="number" dataKey="conteoLac" name="Conteo LAC" {...axisProps} label={{ value: 'Laboratorio', angle: -90, position: 'insideLeft', fill: '#888' }} domain={[0, 'dataMax + 200']} />
                   <ZAxis type="number" range={[50, 50]} />
                   <Tooltip content={<CustomTooltip />} />
@@ -171,7 +174,7 @@ export function ValidacionAberTab() {
 
             {/* ERROR TENDENCY */}
             <ExpandableCard title="Tendencia de Desviación (Diferencia)">
-              <div className="text-xs text-zinc-400 mb-2 italic">Diferencia neta (ABER - LAC). Valores cercanos a cero indican precisión.</div>
+              <div className="text-xs text-zinc-400 mb-2 italic">Diferencia neta (Abber - LAC). Valores cercanos a cero indican precisión.</div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={diffOverTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
@@ -187,8 +190,8 @@ export function ValidacionAberTab() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 mt-2">
-            <ExpandableCard title="Impacto del Porcentaje de Sólidos en el Sensor">
-              <div className="text-xs text-zinc-400 mb-2 italic">¿Un mayor % de sólidos genera mayor error en el sensor ABER?</div>
+            <ExpandableCard title="Impacto del Porcentaje de Sólidos en el Sistema de Medición de Células">
+              <div className="text-xs text-zinc-400 mb-2 italic">¿Un mayor % de sólidos genera mayor error en el sistema de medición Abber?</div>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={diffOverTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />

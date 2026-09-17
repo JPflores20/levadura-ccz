@@ -20,8 +20,8 @@ export function ExecutiveReport({ stats }: { stats?: any[] }) {
     
     conclusiones = [
       { texto: `Promedio Cpk general: ${cpkAvg.toFixed(2)}`, tipo: 'ok' },
-      { texto: `${capaces} indicadores están en control óptimo (Verde).`, tipo: 'ok' },
-      { texto: `${marginales} indicadores están marginales (Amarillo).`, tipo: 'warn' },
+      { texto: `${capaces} indicadores están en nivel excelente (Verde).`, tipo: 'ok' },
+      { texto: `${marginales} indicadores están capaces (Amarillo).`, tipo: 'warn' },
       { texto: `${noCapaces} indicadores fuera de control (Rojo).`, tipo: 'warn' },
       { texto: "Datos sincronizados desde reporte Excel AB-InBev.", tipo: 'ok' }
     ];
@@ -30,8 +30,8 @@ export function ExecutiveReport({ stats }: { stats?: any[] }) {
   const total = capaces + marginales + noCapaces || 5;
 
   const dataCapacidad = [
-    { name: "Capaces", value: capaces, color: CHART_COLORS.green },
-    { name: "Marginales", value: marginales, color: CHART_COLORS.yellow },
+    { name: "Excelentes", value: capaces, color: CHART_COLORS.green },
+    { name: "Capaces", value: marginales, color: CHART_COLORS.yellow },
     { name: "No capaces", value: noCapaces, color: CHART_COLORS.red },
   ];
 

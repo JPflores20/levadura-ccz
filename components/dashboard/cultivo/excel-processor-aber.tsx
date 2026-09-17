@@ -15,7 +15,7 @@ export function ExcelProcessorAber() {
     if (!file) return
     setIsProcessing(true)
     
-    const toastId = toast.loading("Procesando Excel de Validación ABER...")
+    const toastId = toast.loading("Procesando Excel de Validación Abber...")
 
     const reader = new FileReader()
     reader.onload = (evt) => {
@@ -50,7 +50,7 @@ export function ExcelProcessorAber() {
           const diferencia = parseFloat(row[15]?.toString()) || 0
           const solidosAvg = parseFloat(row[21]?.toString()) || 0
 
-          // Ignorar si no hay datos reales del ABER
+          // Ignorar si no hay datos reales de Abber
           if (conteoAber === 0 && conteoLacAvg === 0) return
 
           payload.push({
@@ -67,7 +67,7 @@ export function ExcelProcessorAber() {
         })
 
         if (payload.length === 0) {
-          toast.error("No se encontraron filas con datos válidos de ABER.", { id: toastId })
+          toast.error("No se encontraron filas con datos válidos de Abber.", { id: toastId })
           setIsProcessing(false)
           return
         }
@@ -80,7 +80,7 @@ export function ExcelProcessorAber() {
         .then(res => res.json())
         .then(data => {
           console.log("Datos subidos:", data)
-          toast.success(`¡${payload.length} métricas de ABER subidas con éxito!`, { id: toastId })
+          toast.success(`¡${payload.length} métricas de Abber subidas con éxito!`, { id: toastId })
         })
         .catch(err => {
           console.error(err)
@@ -115,7 +115,7 @@ export function ExcelProcessorAber() {
         disabled={isProcessing}
       >
         <Upload className="w-4 h-4" />
-        {isProcessing ? "Procesando..." : "Subir Excel de Validación ABER"}
+        {isProcessing ? "Procesando..." : "Subir Excel de Validación Abber"}
       </Button>
     </div>
   )

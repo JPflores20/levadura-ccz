@@ -184,7 +184,7 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
                   <TableCell className="text-right font-mono py-1">{indicator.pp}</TableCell>
                   <TableCell className="text-right font-mono py-1">{indicator.ppk}</TableCell>
                   <TableCell className="text-center py-1">
-                    <div className={`mx-auto size-2.5 rounded-full ${indicator.evaluationStatus === 'green' ? 'bg-green-500' : indicator.evaluationStatus === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`} title={indicator.evaluationStatus === 'green' ? 'Capaz' : indicator.evaluationStatus === 'yellow' ? 'Marginal' : 'No capaz'} />
+                    <div className={`mx-auto size-2.5 rounded-full ${indicator.evaluationStatus === 'green' ? 'bg-green-500' : indicator.evaluationStatus === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`} title={indicator.evaluationStatus === 'green' ? 'Excelente' : indicator.evaluationStatus === 'yellow' ? 'Capaz' : 'No capaz'} />
                   </TableCell>
                 </TableRow>
               )
@@ -192,8 +192,8 @@ export function CapabilityTable({ onLocalUpdate, stats, lastUpdateGlobal, dynami
           </TableBody>
         </Table>
         <div className="flex items-center gap-4 mt-2 text-[9px] text-zinc-500">
-          <div className="flex items-center gap-1"><div className="size-2 rounded-full bg-green-500"/> Capaz (≥ 1.33)</div>
-          <div className="flex items-center gap-1"><div className="size-2 rounded-full bg-yellow-500"/> Marginal (1.00 - 1.33)</div>
+          <div className="flex items-center gap-1"><div className="size-2 rounded-full bg-green-500"/> Excelente (≥ 1.33)</div>
+          <div className="flex items-center gap-1"><div className="size-2 rounded-full bg-yellow-500"/> Capaz (1.00 - 1.33)</div>
           <div className="flex items-center gap-1"><div className="size-2 rounded-full bg-red-500"/> No capaz (&lt; 1.00)</div>
         </div>
       </CardContent>

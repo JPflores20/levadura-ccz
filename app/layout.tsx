@@ -6,9 +6,8 @@ const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
-  title: 'Sistema de Análisis de Levadura · HMI Cervecería',
-  description:
-    'Dashboard industrial para el análisis de propagación y cinética de levadura en la elaboración de cerveza.',
+  title: 'Analisis de Levadura y Cineticas de Fermentacion- Reposo · HMI Cervecería',
+  description: 'Sistema de monitoreo de variables de propagación y cinética de levadura en la elaboración de cerveza.',
   icons: {
     icon: [
       {

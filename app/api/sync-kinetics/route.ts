@@ -17,6 +17,48 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
+function procesarCineticas(rows: any[]) {
+    const groupedData: Record<string, any> = {}
+    const compuestos = ["Acetaldehido", "Diacetilo", "Acetato de etilo", "Propanol", "Isobutaol", "Isobutanol", "Acetato de isoamilo", "Isoamil alcohol", "Alcohol isoamilico", "Alcoholes Superiores", "Esteres", "Ésteres"]
+
+    rows.forEach(row => {
+        const getVal = (keys: string[]) => {
+            for (let k of Object.keys(row)) {
+                const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
+                if (keys.some(key => kClean.includes(key.toLowerCase().replace(/[\s\.]/g, '')))) return row[k];
+            }
+            return undefined;
+        }
+
+        const fecha = getVal(["Fecha"]) || "N/A"; 
+        const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
+        const etapa = getVal(["Etapa"]) || "FERMENTACION";
+        const vuelta = row["Dias"] !== undefined ? row["Dias"] : (row["Días"] !== undefined ? row["Días"] : row["Día"] !== undefined ? row["Día"] : undefined);
+        const propagacion = "N/A";
+        const tanque = getVal(["Tanque", "TCC", "Lote", "Item"]) || "N/A";
+        
+        if (vuelta === undefined || vuelta === null || vuelta === "") return;
+        
+        compuestos.forEach(volatil => {
+            const rowVal = getVal([volatil]);
+            const val = parseFloat(rowVal)
+            if (!isNaN(val)) {
+                let volatilLimpio = volatil.toUpperCase().includes("DIACETILO") ? "DIACETILO" : volatil.toUpperCase()
+                if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
+                if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
+                if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
+                if (volatilLimpio === "ACETATO DE ETILO" || volatilLimpio === "ETILO") volatilLimpio = "ETILO";
+                if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
+
+                const key = `${fecha}_${propagacion}_${cepa}_${tanque}_${volatilLimpio}_${etapa}`
+                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, tanque, volatil: volatilLimpio, etapa, vueltas: {} }
+                groupedData[key].vueltas[vuelta.toString()] = val
+            }
+        })
+    })
+    return Object.values(groupedData)
+}
+
 export async function POST(request: Request) {
   try {
     const rawData = await request.json()
@@ -27,7 +69,8 @@ export async function POST(request: Request) {
 
     const finalData = {
       ultimaActualizacion: new Date().toISOString(),
-      rawData: rawData
+      rawData: rawData,
+      stats: procesarCineticas(rawData)
     }
 
     try {

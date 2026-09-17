@@ -49,7 +49,7 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
   const processExcelData = async (rows: any[][]) => {
     let headerRowIndex = -1
     for (let i = 0; i < 10; i++) {
-      if (rows[i] && rows[i].includes("Viabilidad")) {
+      if (rows[i] && rows[i].some((cell: any) => cell && cell.toString().toLowerCase().includes("viabilidad"))) {
         headerRowIndex = i
         break
       }
@@ -80,23 +80,25 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     // Índices de columnas (Ajustar dinámicamente según cabeceras)
     const idxPlato = headers.findIndex((h: string) => h && h.toString().trim() === "°P")
     const idxPh = headers.findIndex((h: string) => h && h.toString().trim() === "pH.")
-    const idxConteo = headers.findIndex((h: string) => h && h.toString().trim() === "Conteo de Celulas x106 (Cel/mL)")
-    const idxViab = headers.findIndex((h: string) => h && h.toString().trim() === "Viabilidad")
+    const idxConteo = findColumnIndex((h) => h.toLowerCase().includes("conteo de celulas"))
+    const idxViab = findColumnIndex((h) => h.toLowerCase().includes("viabilidad"))
     
     // Filtros
-    const idxFecha = headers.findIndex((h: string) => h && h.toString().includes("Fecha"))
-    const idxHora = headers.findIndex((h: string) => h && h.toString().includes("Hora"))
-    const idxTipoLev = headers.findIndex((h: string) => h && h.toString().includes("Tipo de Lev"))
-    const idxTanque = headers.findIndex((h: string) => h && h.toString().trim() === "Tanque")
+    const idxFecha = findColumnIndex((h) => h.toLowerCase().includes("fecha"))
+    const idxHora = findColumnIndex((h) => h.toLowerCase().includes("hora inicio") || h.toLowerCase() === "hora")
+    const idxTipoLev = findColumnIndex((h) => h.toLowerCase().includes("tipo de lev"))
+    const idxTanque = findColumnIndex((h) => h.toLowerCase().trim() === "tanque")
     
     let idxDobleteo = findColumnIndex((h) => h.toLowerCase().includes("doblete"))
     if (idxDobleteo === -1) idxDobleteo = 19; // Columna T por defecto si falla la búsqueda
     const idxSolidos = findColumnIndex((h) => h.toLowerCase().includes("% de solidos") || h.toLowerCase().includes("% de sólidos"))
-    const idxTemp = findColumnIndex((h) => h.toLowerCase().includes("temp.en tanque") || h.toLowerCase().includes("temp. en tanque") || h.toLowerCase().includes("temperatura"))
+    const idxTemp = findColumnIndex((h) => h.toLowerCase().includes("temp del mosto") || h.toLowerCase().includes("temp. en tanque") || h.toLowerCase().includes("temperatura"))
 
-    // Buscar columnas de vitalidad flexiblemente
-    const idxVigor = headers.findIndex((h: string) => h && h.toString().includes("Vigorosas") && !h.toString().includes("Muy"))
-    const idxMuyVigor = headers.findIndex((h: string) => h && h.toString().includes("Muy Vigorosas"))
+    // Buscar columnas de vitalidad flexiblemente (ignorando mayúsculas/minúsculas y variaciones de s/z, y el error ortográfico "vigososas")
+    const idxVigor = findColumnIndex((h) => (h.toLowerCase().includes("vigor") || h.toLowerCase().includes("vigososas")) && !h.toLowerCase().includes("muy"))
+    const idxMuyVigor = findColumnIndex((h) => h.toLowerCase().includes("muy vig"))
+    const idxDebiles = findColumnIndex((h) => h.toLowerCase().includes("debiles") || h.toLowerCase().includes("débiles"))
+    const idxMuertas = findColumnIndex((h) => h.toLowerCase().includes("muertas"))
 
     const payload: any[] = []
 
@@ -136,6 +138,8 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
           conteo: Number(row[idxConteo]) || 0,
           viab: viab,
           vigor: totalVigor,
+          debiles: idxDebiles >= 0 ? (Number(row[idxDebiles]) || 0) : null,
+          muertas: idxMuertas >= 0 ? (Number(row[idxMuertas]) || 0) : null,
           solidos: idxSolidos >= 0 ? (Number(row[idxSolidos]) || 0) : 0,
           temp: idxTemp >= 0 ? (Number(row[idxTemp]) || 0) : 0
         })
