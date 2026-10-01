@@ -81,9 +81,13 @@ function procesarCineticas(rows: any[]) {
     rows.forEach(row => {
         // Case-insensitive key lookup
         const getVal = (keys: string[]) => {
-            for (let k of Object.keys(row)) {
-                const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
-                if (keys.some(key => kClean.includes(key.toLowerCase().replace(/[\s\.]/g, '')))) return row[k];
+            const rowKeys = Object.keys(row);
+            for (let targetKey of keys) {
+                const targetClean = targetKey.toLowerCase().replace(/[\s\.]/g, '');
+                for (let k of rowKeys) {
+                    const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
+                    if (kClean.includes(targetClean)) return row[k];
+                }
             }
             return undefined;
         }
