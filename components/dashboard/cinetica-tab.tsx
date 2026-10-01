@@ -25,20 +25,14 @@ export function CineticaTab() {
   // Función auxiliar para buscar llaves sin importar mayúsculas
   const getProp = (obj: any, keys: string[]) => {
     if (!obj) return null;
-    const lowerKeys = keys.map(k => k.toLowerCase().replace(/[\s\.]/g, ''));
-    const foundKey = Object.keys(obj).find(k => {
-      const kLower = k.toLowerCase().replace(/[\s\.]/g, '');
-      return lowerKeys.some(lk => kLower.includes(lk));
-    });
-    return foundKey ? obj[foundKey] : null;
+    const objKeys = Object.keys(obj);
+    for (const k of keys) {
+      const searchKey = k.toLowerCase().replace(/[\s\.]/g, '');
+      const foundKey = objKeys.find(ok => ok.toLowerCase().replace(/[\s\.]/g, '').includes(searchKey));
+      if (foundKey) return obj[foundKey];
+    }
+    return null;
   }
-
-  // Extracción de valores únicos para los filtros
-  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => formatExcelDate(getProp(d, ['Fecha']))))).filter(Boolean) as string[]
-  const uniqueEtapas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Etapa'])?.toString().trim()))).filter(Boolean) as string[]
-  const uniqueDias = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Dias', 'Días'])?.toString().trim()))).filter(Boolean) as string[]
-  const uniqueTanques = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Tanque', 'TCC', 'Lote', 'Item'])?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
-  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Marca', 'Cepa'])?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
 
   const [filterFechas, setFilterFechas] = useState<string[]>([])
   const [isOpenFechas, setIsOpenFechas] = useState(false)
@@ -51,8 +45,21 @@ export function CineticaTab() {
   const [filterMarca, setFilterMarca] = useState<string[]>([])
   const [isOpenMarca, setIsOpenMarca] = useState(false)
 
+  // Extracción de valores únicos para los filtros
+  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => formatExcelDate(getProp(d, ['Fecha']))))).filter(Boolean) as string[]
+  const uniqueEtapas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Etapa'])?.toString().trim()))).filter(Boolean) as string[]
+  const uniqueDias = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Dias', 'Días'])?.toString().trim()))).filter(Boolean) as string[]
+  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Marca', 'Cepa'])?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+
+  const tanquesSourceData = filterMarca.length > 0 
+    ? rawData.filter((d: any) => filterMarca.includes(getProp(d, ['Marca', 'Cepa'])?.toString().trim().toUpperCase()))
+    : rawData;
+  const uniqueTanques = Array.from(new Set(tanquesSourceData.map((d: any) => getProp(d, ['Tanque', 'TCC', 'Lote', 'Item'])?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
+
   // Filtrado de rawData
-  const filteredData = rawData.filter((d: any) => {
+  const hasAnyFilter = filterFechas.length > 0 || filterEtapa.length > 0 || filterDias.length > 0 || filterTanques.length > 0 || filterMarca.length > 0;
+  
+  const filteredData = !hasAnyFilter ? [] : rawData.filter((d: any) => {
     const dFecha = formatExcelDate(getProp(d, ['Fecha']))
     const dEtapa = getProp(d, ['Etapa'])?.toString().trim()
     const dDias = getProp(d, ['Dias', 'Días'])?.toString().trim()
@@ -159,20 +166,42 @@ export function CineticaTab() {
   })
 
   // 3. Preparación de datos para gráficos
-  const graphData = filteredData.map((row: any, i: number) => {
-    return {
-      paso: `Muestra ${i+1}`,
-      acetaldehido: getValSingle(row, ["Acetaldehido"]),
-      diacetilo: getValSingle(row, ["Diacetilo"]),
-      esteres: getValSingle(row, ["Esteres", "Ésteres"]),
-      alcoholes: getValSingle(row, ["Alcoholes Superiores"]),
-      acetatoEtilo: getValSingle(row, ["Acetato de etilo"]),
-      acetatoIsoamilo: getValSingle(row, ["Acetato de isoamilo"]),
-      isobutanol: getValSingle(row, ["Isobutaol", "Isobutanol"]),
-      propanol: getValSingle(row, ["Propanol"]),
-      isoamilico: getValSingle(row, ["Isoamil alcohol", "Alcohol isoamilico"])
+  const steps = ["F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7"];
+
+  const graphData = steps.map(step => {
+    const point: any = { paso: step };
+    
+    // Todas las filas correspondientes a este step
+    const rows = filteredData.filter((d: any) => {
+       const e = getProp(d, ['Etapa'])?.toString().trim().toUpperCase() || "";
+       const dDias = getProp(d, ['Dias', 'Días'])?.toString().trim() || "";
+       let rowStep = "";
+       if (e && dDias !== "") {
+         const prefix = e.includes("FERM") ? "F" : e.includes("REP") ? "R" : e.charAt(0);
+         rowStep = `${prefix}${dDias}`;
+       }
+       return rowStep === step;
+    });
+
+    const avg = (keys: string[]) => {
+       if (rows.length === 0) return null;
+       const vals = rows.map((r: any) => getValSingle(r, keys)).filter((v: number) => v !== 0 && v !== null && !isNaN(v));
+       if (vals.length === 0) return null;
+       return parseFloat((vals.reduce((a: number, b: number) => a + b, 0) / vals.length).toFixed(2));
     }
-  })
+
+    point.acetaldehido = avg(["Acetaldehido"]);
+    point.diacetilo = avg(["Diacetilo"]);
+    point.esteres = avg(["Esteres", "Ésteres"]);
+    point.alcoholes = avg(["Alcoholes Superiores"]);
+    point.acetatoEtilo = avg(["Acetato de etilo"]);
+    point.acetatoIsoamilo = avg(["Acetato de isoamilo", "Acetato de isoamil"]);
+    point.isobutanol = avg(["Isobutaol", "Isobutanol"]);
+    point.propanol = avg(["Propanol"]);
+    point.isoamilico = avg(["Isoamil alcohol", "Alcohol isoamilico"]);
+    
+    return point;
+  });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -197,11 +226,11 @@ export function CineticaTab() {
       {/* Selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 shadow-lg relative">
         <div className="flex flex-wrap items-center gap-4">
-          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
+          <CheckboxFilter label="Marca" options={uniqueMarcas} selectedOptions={filterMarca} onChange={setFilterMarca} isOpen={isOpenMarca} setIsOpen={setIsOpenMarca} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
           <CheckboxFilter label="Etapa" options={uniqueEtapas} selectedOptions={filterEtapa} onChange={setFilterEtapa} isOpen={isOpenEtapa} setIsOpen={setIsOpenEtapa} />
           <CheckboxFilter label="Días" options={uniqueDias} selectedOptions={filterDias} onChange={setFilterDias} isOpen={isOpenDias} setIsOpen={setIsOpenDias} />
-          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
-          <CheckboxFilter label="Marca" options={uniqueMarcas} selectedOptions={filterMarca} onChange={setFilterMarca} isOpen={isOpenMarca} setIsOpen={setIsOpenMarca} />
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
         </div>
       </div>
 
@@ -261,60 +290,80 @@ export function CineticaTab() {
         
         <ExpandableCard title="Cinética de Acetaldehído y Diacetilo">
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis dataKey="paso" {...axisProps} />
+              <XAxis dataKey="paso" {...axisProps} label={{ value: 'Días (F=Fermentación, R=Reposo)', position: 'insideBottom', offset: -10, fill: '#888' }} />
               {/* Eje Y 1 (Izquierdo) */}
               <YAxis yAxisId="left" {...axisProps} orientation="left" stroke={CHART_COLORS.blue} />
               {/* Eje Y 2 (Derecho) */}
               <YAxis yAxisId="right" {...axisProps} orientation="right" stroke={CHART_COLORS.yellow} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-              <Line yAxisId="left" type="monotone" name="Acetaldehído" dataKey="acetaldehido" stroke={CHART_COLORS.blue} strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line yAxisId="right" type="monotone" name="Diacetilo Total" dataKey="diacetilo" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              {/* Interpolated Lines */}
+              <Line yAxisId="left" type="monotone" dataKey="acetaldehido" stroke={CHART_COLORS.blue} strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              <Line yAxisId="right" type="monotone" dataKey="diacetilo" stroke={CHART_COLORS.yellow} strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              {/* Real Data Lines */}
+              <Line yAxisId="left" type="monotone" name="Acetaldehído" dataKey="acetaldehido" stroke={CHART_COLORS.blue} strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+              <Line yAxisId="right" type="monotone" name="Diacetilo Total" dataKey="diacetilo" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
             </LineChart>
           </ResponsiveContainer>
         </ExpandableCard>
 
         <ExpandableCard title="Ésteres y Alcoholes Superiores">
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis dataKey="paso" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="paso" {...axisProps} label={{ value: 'Días (F=Fermentación, R=Reposo)', position: 'insideBottom', offset: -10, fill: '#888' }} />
+              <YAxis yAxisId="left" {...axisProps} orientation="left" stroke="#10b981" />
+              <YAxis yAxisId="right" {...axisProps} orientation="right" stroke={CHART_COLORS.yellow} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-              <Line type="monotone" name="Ésteres Generales" dataKey="esteres" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Alcoholes Superiores" dataKey="alcoholes" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              {/* Interpolated Lines */}
+              <Line yAxisId="left" type="monotone" dataKey="esteres" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              <Line yAxisId="right" type="monotone" dataKey="alcoholes" stroke={CHART_COLORS.yellow} strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              {/* Real Data Lines */}
+              <Line yAxisId="left" type="monotone" name="Ésteres Generales" dataKey="esteres" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+              <Line yAxisId="right" type="monotone" name="Alcoholes Superiores" dataKey="alcoholes" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
             </LineChart>
           </ResponsiveContainer>
         </ExpandableCard>
 
         <ExpandableCard title="Acetato de Etilo e Isoamilo">
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis dataKey="paso" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="paso" {...axisProps} label={{ value: 'Días (F=Fermentación, R=Reposo)', position: 'insideBottom', offset: -10, fill: '#888' }} />
+              <YAxis yAxisId="left" {...axisProps} orientation="left" stroke="#ec4899" />
+              <YAxis yAxisId="right" {...axisProps} orientation="right" stroke="#f97316" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-              <Line type="monotone" name="Acetato de Etilo" dataKey="acetatoEtilo" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Acetato de Isoamilo" dataKey="acetatoIsoamilo" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              {/* Interpolated Lines */}
+              <Line yAxisId="left" type="monotone" dataKey="acetatoEtilo" stroke="#ec4899" strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              <Line yAxisId="right" type="monotone" dataKey="acetatoIsoamilo" stroke="#f97316" strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              {/* Real Data Lines */}
+              <Line yAxisId="left" type="monotone" name="Acetato de Etilo" dataKey="acetatoEtilo" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+              <Line yAxisId="right" type="monotone" name="Acetato de Isoamilo" dataKey="acetatoIsoamilo" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
             </LineChart>
           </ResponsiveContainer>
         </ExpandableCard>
 
         <ExpandableCard title="Alcoholes Secundarios">
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+            <LineChart data={graphData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis dataKey="paso" {...axisProps} />
-              <YAxis {...axisProps} />
+              <XAxis dataKey="paso" {...axisProps} label={{ value: 'Días (F=Fermentación, R=Reposo)', position: 'insideBottom', offset: -10, fill: '#888' }} />
+              <YAxis yAxisId="left" {...axisProps} orientation="left" stroke="#06b6d4" />
+              <YAxis yAxisId="right" {...axisProps} orientation="right" stroke="#f43f5e" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-              <Line type="monotone" name="Isobutanol" dataKey="isobutanol" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Propanol" dataKey="propanol" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls />
-              <Line type="monotone" name="Alcohol Isoamílico" dataKey="isoamilico" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+              {/* Interpolated Lines */}
+              <Line yAxisId="left" type="monotone" dataKey="isobutanol" stroke="#06b6d4" strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              <Line yAxisId="left" type="monotone" dataKey="propanol" stroke={CHART_COLORS.yellow} strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              <Line yAxisId="right" type="monotone" dataKey="isoamilico" stroke="#f43f5e" strokeWidth={2} strokeDasharray="5 5" opacity={0.4} connectNulls={true} dot={false} activeDot={false} legendType="none" />
+              {/* Real Data Lines */}
+              <Line yAxisId="left" type="monotone" name="Isobutanol" dataKey="isobutanol" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+              <Line yAxisId="left" type="monotone" name="Propanol" dataKey="propanol" stroke={CHART_COLORS.yellow} strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
+              <Line yAxisId="right" type="monotone" name="Alcohol Isoamílico" dataKey="isoamilico" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} connectNulls={false} />
             </LineChart>
           </ResponsiveContainer>
         </ExpandableCard>

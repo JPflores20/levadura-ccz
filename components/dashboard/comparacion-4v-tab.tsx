@@ -58,7 +58,7 @@ export function Comparacion4vTab() {
   const dataBMap = tanqueB.map(t => ({ name: t, data: getTanqueData(t) }))
 
   const prepareChartData = (volatilName: string) => {
-    const chartData = []
+    const chartData: any[] = []
     const normalizedVolatilName = volatilName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
 
     let maxFerm = 0;
@@ -85,7 +85,7 @@ export function Comparacion4vTab() {
       }
     })
 
-    const axisPoints = [];
+    const axisPoints: Array<{ label: string; day: number; isFerm: boolean }> = [];
     const startFerm = hasZeroFerm ? 0 : 1;
     for (let i = startFerm; i <= maxFerm; i++) {
        axisPoints.push({ label: `F${i}`, day: i, isFerm: true });

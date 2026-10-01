@@ -58,7 +58,9 @@ export function PropagationTab() {
   const uniqueDobleteo = Array.from(new Set(rawDataRaw.map((d: any) => (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
 
   // Apply filters
-  const rawData = rawDataRaw.filter((d: any) => {
+  const hasAnyFilter = filterCodigos.length > 0 || filterFechas.length > 0 || filterTipos.length > 0 || filterTanques.length > 0 || filterDobleteo.length > 0;
+  
+  const rawData = !hasAnyFilter ? [] : rawDataRaw.filter((d: any) => {
     const dCodigo = (d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo)?.toString().trim().toUpperCase()
     const dFecha = d.fecha?.toString().trim()
     const dTipo = d.tipoLev?.toString().trim().toUpperCase()
@@ -163,11 +165,11 @@ export function PropagationTab() {
 
         
         <div className="flex flex-wrap xl:flex-nowrap items-center justify-start xl:justify-end gap-2 w-full">
-          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
           <CheckboxFilter label="Tipo de Lev" options={uniqueTipos} selectedOptions={filterTipos} onChange={setFilterTipos} isOpen={isOpenTipos} setIsOpen={setIsOpenTipos} />
           <CheckboxFilter label="Código" options={uniqueCodigos} selectedOptions={filterCodigos} onChange={setFilterCodigos} isOpen={isOpenCodigos} setIsOpen={setIsOpenCodigos} />
-          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
           <CheckboxFilter label="Dobleteo" options={uniqueDobleteo} selectedOptions={filterDobleteo} onChange={setFilterDobleteo} isOpen={isOpenDobleteo} setIsOpen={setIsOpenDobleteo} />
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
         </div>
       </div>
 

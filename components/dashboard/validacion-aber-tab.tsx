@@ -22,17 +22,21 @@ export function ValidacionAberTab() {
   
   const rawData = dbData?.rawData || []
 
-  // Extract unique values for filters
-  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => String(d.fecha || d.Fecha || d["FECHA "] || d["FECHA"] || "").trim()))).filter(Boolean) as string[]
-  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => String(d.marca || d.Marca || d.cepa || d.Cepa || "").trim().toUpperCase()))).filter(Boolean) as string[]
-  const uniqueTanques = Array.from(new Set(rawData.map((d: any) => String(d.tanque || d.Tanque || d.TCC || d.Lote || d.Item || "").trim().toUpperCase()))).filter(Boolean) as string[]
-
   const [filterFecha, setFilterFecha] = useState<string[]>([])
   const [isOpenFecha, setIsOpenFecha] = useState(false)
   const [filterMarca, setFilterMarca] = useState<string[]>([])
   const [isOpenMarca, setIsOpenMarca] = useState(false)
   const [filterTanque, setFilterTanque] = useState<string[]>([])
   const [isOpenTanque, setIsOpenTanque] = useState(false)
+
+  // Extract unique values for filters
+  const uniqueFechas = Array.from(new Set(rawData.map((d: any) => String(d.fecha || d.Fecha || d["FECHA "] || d["FECHA"] || "").trim()))).filter(Boolean) as string[]
+  const uniqueMarcas = Array.from(new Set(rawData.map((d: any) => String(d.marca || d.Marca || d.cepa || d.Cepa || "").trim().toUpperCase()))).filter(Boolean) as string[]
+
+  const tanquesSourceData = filterMarca.length > 0
+    ? rawData.filter((d: any) => filterMarca.includes(String(d.marca || d.Marca || d.cepa || d.Cepa || "").trim().toUpperCase()))
+    : rawData;
+  const uniqueTanques = Array.from(new Set(tanquesSourceData.map((d: any) => String(d.tanque || d.Tanque || d.TCC || d.Lote || d.Item || "").trim().toUpperCase()))).filter(Boolean) as string[]
 
   // Normalizar datos para manejar tanto el formato viejo como el nuevo (directo del Excel)
   const normalizedData = rawData.map((d: any) => {
@@ -75,7 +79,8 @@ export function ValidacionAberTab() {
     return true;
   })
 
-  const correlationData = normalizedData
+  const hasAnyFilter = filterFecha.length > 0 || filterMarca.length > 0 || filterTanque.length > 0;
+  const correlationData = hasAnyFilter ? normalizedData : [];
 
   // Filtramos por línea
   const correlationLinea1 = correlationData.filter((d: any) => String(d.linea).includes("1"))
@@ -83,10 +88,10 @@ export function ValidacionAberTab() {
 
   // Line Chart Data for Diferencia over time
   // Agrupar por fecha
-  const fechasUnicas = Array.from(new Set(normalizedData.map((d: any) => d.fecha))) as string[]
+  const fechasUnicas = Array.from(new Set(correlationData.map((d: any) => d.fecha))) as string[]
   const diffOverTimeData = fechasUnicas.map(f => {
-    const l1 = normalizedData.find((d: any) => d.fecha === f && String(d.linea).includes("1"))
-    const l2 = normalizedData.find((d: any) => d.fecha === f && String(d.linea).includes("2"))
+    const l1 = correlationData.find((d: any) => d.fecha === f && String(d.linea).includes("1"))
+    const l2 = correlationData.find((d: any) => d.fecha === f && String(d.linea).includes("2"))
     return {
       fecha: f,
       diffL1: l1 ? l1.diferencia : null,
@@ -137,9 +142,9 @@ export function ValidacionAberTab() {
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFecha} onChange={setFilterFecha} isOpen={isOpenFecha} setIsOpen={setIsOpenFecha} />
           <CheckboxFilter label="Marca" options={uniqueMarcas} selectedOptions={filterMarca} onChange={setFilterMarca} isOpen={isOpenMarca} setIsOpen={setIsOpenMarca} />
           <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanque} onChange={setFilterTanque} isOpen={isOpenTanque} setIsOpen={setIsOpenTanque} />
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFecha} onChange={setFilterFecha} isOpen={isOpenFecha} setIsOpen={setIsOpenFecha} />
         </div>
       </div>
 
