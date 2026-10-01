@@ -343,9 +343,6 @@ export function Comparacion4vTab() {
           </div>
         </div>
         
-        
-      </div>
-
       {/* Gráficas Empalmadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
         <ExpandableCard title="Comparativa de Diacetilo y Acetaldehído" className="lg:col-span-2">
