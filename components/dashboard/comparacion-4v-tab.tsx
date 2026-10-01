@@ -267,7 +267,7 @@ export function Comparacion4vTab() {
           <div className="flex-1 flex flex-col gap-2 p-2 border border-blue-500/30 rounded">
             <div className="flex gap-2">
               <div className="flex-1 flex flex-col gap-1">
-                <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">??? Marca A</label>
+                <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">Marca A</label>
                 <select 
                   value={marcaA}
                   onChange={e => setMarcaA(e.target.value)}
@@ -278,7 +278,7 @@ export function Comparacion4vTab() {
                 </select>
               </div>
               <div className="flex-[2] flex flex-col gap-1">
-                <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">??? Tanque A</label>
+                <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">Tanque A</label>
                 <select 
                   value={tanqueA}
                   onChange={e => setTanqueA(e.target.value)}
@@ -295,7 +295,7 @@ export function Comparacion4vTab() {
           <div className="flex-1 flex flex-col gap-2 p-2 border border-red-500/30 rounded" ref={dropdownRef}>
             <div className="flex gap-2">
               <div className="flex-1 flex flex-col gap-1">
-                <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">??? Marca B</label>
+                <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">Marca B</label>
                 <select 
                   value={marcaB}
                   onChange={e => setMarcaB(e.target.value)}
@@ -306,7 +306,7 @@ export function Comparacion4vTab() {
                 </select>
               </div>
               <div className="flex-[2] flex flex-col gap-1 relative">
-                <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">??? Tanque(s) B</label>
+                <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">Tanque(s) B</label>
                 <div className="relative w-full">
                   <button 
                     onClick={() => setIsOpenTanqueB(!isOpenTanqueB)}
