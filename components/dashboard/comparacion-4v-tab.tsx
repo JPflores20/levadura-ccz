@@ -15,7 +15,54 @@ export function Comparacion4vTab() {
     dedupingInterval: 300000 
   })
   
-  const statsData = dbData?.stats || []
+  const rawData = dbData?.rawData || []
+  
+  const statsData = React.useMemo(() => {
+    if (!rawData.length) return []
+    const groupedData: Record<string, any> = {}
+    const compuestos = ["Acetaldehido", "Diacetilo", "Acetato de etilo", "Propanol", "Isobutaol", "Isobutanol", "Acetato de isoamilo", "Isoamil alcohol", "Alcohol isoamilico", "Alcoholes Superiores", "Esteres", "Ésteres"]
+    
+    rawData.forEach((row: any) => {
+        const getVal = (keys: string[]) => {
+            const rowKeys = Object.keys(row);
+            for (let targetKey of keys) {
+                const targetClean = targetKey.toLowerCase().replace(/[\s\.]/g, '');
+                for (let k of rowKeys) {
+                    const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
+                    if (kClean.includes(targetClean)) return row[k];
+                }
+            }
+            return undefined;
+        }
+
+        const fecha = getVal(["Fecha"]) || "N/A"; 
+        const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
+        const etapa = getVal(["Etapa"]) || "FERMENTACION";
+        const vuelta = row["Dias"] !== undefined ? row["Dias"] : (row["Días"] !== undefined ? row["Días"] : row["Día"] !== undefined ? row["Día"] : undefined);
+        const propagacion = "N/A";
+        const tanque = getVal(["Tanque", "TCC", "Lote", "Item"]) || "N/A";
+        
+        if (vuelta === undefined || vuelta === null || vuelta === "") return;
+        
+        compuestos.forEach(volatil => {
+            const rowVal = getVal([volatil]);
+            const val = parseFloat(rowVal)
+            if (!isNaN(val)) {
+                let volatilLimpio = volatil.toUpperCase().includes("DIACETILO") ? "DIACETILO" : volatil.toUpperCase()
+                if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
+                if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
+                if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
+                if (volatilLimpio === "ACETATO DE ETILO" || volatilLimpio === "ETILO") volatilLimpio = "ETILO";
+                if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
+
+                const key = `${fecha}_${propagacion}_${cepa}_${tanque}_${volatilLimpio}_${etapa}`
+                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, tanque, volatil: volatilLimpio, etapa, vueltas: {} }
+                groupedData[key].vueltas[vuelta.toString()] = val
+            }
+        })
+    })
+    return Object.values(groupedData)
+  }, [rawData])
 
   // Unique Marcas
   const uniqueMarcas = Array.from(new Set(statsData.map((d: any) => d.cepa?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A") as string[]
@@ -97,7 +144,9 @@ export function Comparacion4vTab() {
     let hasZeroFerm = false;
     let hasZeroRep = false;
 
-    statsData.forEach((d: any) => {
+    // Only compute axis range from the SELECTED tanks (A + all B), not all data
+    const allSelectedData = [...dataA, ...dataBMap.flatMap(b => b.data)];
+    allSelectedData.forEach((d: any) => {
       const etapa = (d.etapa || "").toString().toUpperCase();
       if (d.vueltas) {
          Object.keys(d.vueltas).forEach(k => {
