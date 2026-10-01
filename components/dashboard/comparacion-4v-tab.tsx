@@ -312,7 +312,7 @@ export function Comparacion4vTab() {
                     onClick={() => setIsOpenTanqueB(!isOpenTanqueB)}
                     className="w-full bg-black border border-red-500/50 text-zinc-200 text-xs rounded px-2 py-1.5 outline-none focus:border-red-500 text-left flex justify-between items-center h-[32px]"
                   >
-                    <span className="truncate">{tanqueB.length > 0 ? `${tanqueB.length} seleccionados` : ${tanqueB.length} seleccionados : "Seleccionar..."}</span>
+                    <span className="truncate">{tanqueB.length > 0 ? `${tanqueB.length} seleccionados` : "Seleccionar..."}</span>
                     <span className="text-[10px]">?</span>
                   </button>
                   
