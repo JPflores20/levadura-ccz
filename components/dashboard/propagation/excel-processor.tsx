@@ -63,8 +63,10 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     const headers = rows[headerRowIndex]
     const dataRows = rows.slice(headerRowIndex + 1)
 
-    // Función para buscar en las primeras 10 filas por si los encabezados están muy separados
+    // Función para buscar columna en headers o en las primeras 10 filas
     const findColumnIndex = (matchFn: (val: string) => boolean) => {
+      const hIdx = headers.findIndex((h: any) => h && matchFn(h.toString().trim()))
+      if (hIdx !== -1) return hIdx
       for (let r = 0; r < Math.min(rows.length, 10); r++) {
         if (!rows[r]) continue
         for (let c = 0; c < rows[r].length; c++) {
@@ -80,14 +82,17 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
     // Índices de columnas (Ajustar dinámicamente según cabeceras)
     const idxPlato = headers.findIndex((h: string) => h && h.toString().trim() === "°P")
     const idxPh = headers.findIndex((h: string) => h && h.toString().trim() === "pH.")
-    const idxConteo = findColumnIndex((h) => h.toLowerCase().includes("conteo de celulas"))
+    const idxConteo = findColumnIndex((h) => h.toLowerCase().includes("conteo de celulas") || h.toLowerCase() === "conteo")
     const idxViab = findColumnIndex((h) => h.toLowerCase().includes("viabilidad"))
     
     // Filtros
     const idxFecha = findColumnIndex((h) => h.toLowerCase().includes("fecha"))
     const idxHora = findColumnIndex((h) => h.toLowerCase().includes("hora inicio") || h.toLowerCase() === "hora")
-    const idxTipoLev = findColumnIndex((h) => h.toLowerCase().includes("tipo de lev"))
-    const idxTanque = findColumnIndex((h) => h.toLowerCase().trim() === "tanque")
+    const idxTipoLev = findColumnIndex((h) => h.toLowerCase().includes("tipo de lev") || h.toLowerCase() === "cepa" || h.toLowerCase() === "marca")
+    const idxTanque = findColumnIndex((h) => h.toLowerCase().trim() === "tanque" || h.toLowerCase().trim() === "tcc")
+    const idxGen = findColumnIndex((h) => h.toLowerCase().includes("gen.") || h.toLowerCase() === "gen" || h.toLowerCase().includes("generaci"))
+    const idxVuelta = findColumnIndex((h) => h.toLowerCase().includes("vuelta") || h.toLowerCase() === "vta" || h.toLowerCase() === "vta.")
+    const idxCodigo = findColumnIndex((h) => h.toLowerCase().includes("codigo de cultivo") || h.toLowerCase().includes("codigo") || h.toLowerCase().includes("código"))
     
     let idxDobleteo = findColumnIndex((h) => h.toLowerCase().includes("doblete"))
     if (idxDobleteo === -1) idxDobleteo = 19; // Columna T por defecto si falla la búsqueda
@@ -120,12 +125,12 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
           horaVal = `${hh}:${mm}`
         }
 
-        let tipoLevVal = idxTipoLev >= 0 ? row[idxTipoLev] : "General"
-        let tanqueVal = idxTanque >= 0 ? row[idxTanque] : "N/A"
-        tanqueVal = tanqueVal ? tanqueVal.toString() : "N/A"
-        
-        let dobleteoVal = idxDobleteo >= 0 ? row[idxDobleteo] : "N/A"
-        dobleteoVal = dobleteoVal ? dobleteoVal.toString() : "N/A"
+        let tipoLevVal = idxTipoLev >= 0 && row[idxTipoLev] ? row[idxTipoLev].toString().trim() : "General"
+        let tanqueVal = idxTanque >= 0 && row[idxTanque] ? row[idxTanque].toString().trim() : "N/A"
+        let dobleteoVal = idxDobleteo >= 0 && row[idxDobleteo] ? row[idxDobleteo].toString().trim() : "N/A"
+        let genVal = idxGen >= 0 && row[idxGen] !== undefined && row[idxGen] !== null && row[idxGen] !== "" ? row[idxGen].toString().trim() : "N/A"
+        let vueltaVal = idxVuelta >= 0 && row[idxVuelta] !== undefined && row[idxVuelta] !== null && row[idxVuelta] !== "" ? row[idxVuelta].toString().trim() : "1"
+        let codigoVal = idxCodigo >= 0 && row[idxCodigo] !== undefined && row[idxCodigo] !== null ? row[idxCodigo].toString().trim() : "N/A"
 
         payload.push({
           fecha: fechaVal,
@@ -133,6 +138,9 @@ export function ExcelProcessor({ onDataProcessed }: ExcelProcessorProps) {
           tipoLev: tipoLevVal,
           tanque: tanqueVal,
           dobleteo: dobleteoVal,
+          generacion: genVal,
+          vuelta: vueltaVal,
+          codigoCultivo: codigoVal,
           plato: Number(row[idxPlato]) || 0,
           ph: Number(row[idxPh]) || 0,
           conteo: Number(row[idxConteo]) || 0,

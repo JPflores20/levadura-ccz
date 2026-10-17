@@ -1,12 +1,15 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import useSWR from 'swr'
 import { Activity, Droplets, Gauge, Percent } from "lucide-react"
 import { CultureSummaryColumn } from "./comparison/culture-summary-column"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { ExpandableCard } from "./expandable-card"
+import { CheckboxFilter } from "./checkbox-filter"
+import { CalendarFilter } from "./calendar-filter"
 import { CHART_COLORS, axisProps, tooltipStyle } from "@/lib/chart-config"
+import { formatExcelDate } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -19,43 +22,87 @@ export function ComparacionTab() {
   
   const rawData = dbData?.rawData || []
 
-  const tiposUnicos = Array.from(new Set(rawData.map((d: any) => (d.tipoLev || "N/A").toString().toUpperCase()))).filter((v: any) => v !== "N/A" && v !== "UNDEFINED") as string[]
-  const dobleteosUnicos = Array.from(new Set(rawData.map((d: any) => (d["Dobleteo"] || d.dobleteo || "N/A").toString().toUpperCase()))).filter((v: any) => v !== "N/A" && v !== "UNDEFINED") as string[]
-  const estadosUnicos = Array.from(new Set(rawData.map((d: any) => (d["ESTADO"] || d["Estado"] || d.estado || "N/A").toString().toUpperCase()))).filter((v: any) => v !== "N/A" && v !== "UNDEFINED") as string[]
+  // Normalizar datos
+  const normalizedRawData = rawData.map((d: any) => ({
+    ...d,
+    fechaFormateada: formatExcelDate(d.fecha || d.Fecha),
+    generacionVal: (d["Gen."] || d.generacion || d.gen || d["Gen"] || d["Generacion"] || d["Generación"] || d.Gen || "N/A").toString().trim(),
+    tipoLevVal: (d.tipoLev || d.Tipo || d.tipo || d["Tipo de Lev"] || "N/A").toString().trim().toUpperCase(),
+    dobleteoVal: (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete || "N/A").toString().trim(),
+    tanqueVal: (d.tanque || d.Tanque || d["Tanque"] || "N/A").toString().trim().toUpperCase()
+  }))
 
-  const [filterTipo, setFilterTipo] = useState<string>("TODOS")
-  const [filterDobleteo, setFilterDobleteo] = useState<string>("TODOS")
-  const [filterEstado, setFilterEstado] = useState<string>("TODOS")
+  const uniqueGeneraciones = Array.from(new Set(normalizedRawData.map((d: any) => d.generacionVal))).filter(g => g && g !== "N/A" && g !== "UNDEFINED") as string[]
+  uniqueGeneraciones.sort()
 
-  // Extraer combinaciones únicas para los lotes (agrupando por tanque, tipoLev y fecha inicial)
+  const uniqueTipos = Array.from(new Set(normalizedRawData.map((d: any) => d.tipoLevVal))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
+  uniqueTipos.sort()
+
+  const uniqueDobleteos = Array.from(new Set(normalizedRawData.map((d: any) => d.dobleteoVal))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  uniqueDobleteos.sort()
+
+  const uniqueTanques = Array.from(new Set(normalizedRawData.map((d: any) => d.tanqueVal))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  uniqueTanques.sort()
+
+  const uniqueFechas = Array.from(new Set(normalizedRawData.map((d: any) => d.fechaFormateada))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
+
+  // Filtros de selección múltiple
+  const [filterGeneracion, setFilterGeneracion] = useState<string[]>([])
+  const [isOpenGeneracion, setIsOpenGeneracion] = useState(false)
+
+  const [filterTipo, setFilterTipo] = useState<string[]>([])
+  const [isOpenTipo, setIsOpenTipo] = useState(false)
+
+  const [filterDobleteo, setFilterDobleteo] = useState<string[]>([])
+  const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
+
+  const [filterTanque, setFilterTanque] = useState<string[]>([])
+  const [isOpenTanque, setIsOpenTanque] = useState(false)
+
+  const [filterFecha, setFilterFecha] = useState<string[]>([])
+  const [isOpenFecha, setIsOpenFecha] = useState(false)
+
+  // Extraer combinaciones únicas para los lotes (agrupando por tanque, tipoLev, generacion y código)
   const uniqueLotesMap = new Map()
-  rawData.forEach((d: any, index: number) => {
-    const dTipoLev = (d.tipoLev || "N/A").toString().toUpperCase()
-    const dDobleteo = (d["Dobleteo"] || d.dobleteo || "N/A").toString().toUpperCase()
-    const dEstado = (d["ESTADO"] || d["Estado"] || d.estado || "N/A").toString().toUpperCase()
-
+  normalizedRawData.forEach((d: any, index: number) => {
     // Aplicar filtros a los lotes disponibles
-    if (filterTipo !== "TODOS" && dTipoLev !== filterTipo) return;
-    if (filterDobleteo !== "TODOS" && dDobleteo !== filterDobleteo) return;
-    if (filterEstado !== "TODOS" && dEstado !== filterEstado) return;
+    if (filterGeneracion.length > 0 && !filterGeneracion.includes(d.generacionVal)) return;
+    if (filterTipo.length > 0 && !filterTipo.includes(d.tipoLevVal)) return;
+    if (filterDobleteo.length > 0 && !filterDobleteo.includes(d.dobleteoVal)) return;
+    if (filterTanque.length > 0 && !filterTanque.includes(d.tanqueVal)) return;
+    if (filterFecha.length > 0 && !filterFecha.includes(d.fechaFormateada)) return;
 
-    const codigo = d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo || "S/C"
-    const label = `${d.tanque || 'N/A'} - ${codigo} (${dTipoLev})`
+    const codigo = d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo || ""
+    const codigoStr = codigo && codigo !== "N/A" ? `${codigo} - ` : ""
+    const label = `${d.tanqueVal} - ${codigoStr}Gen: ${d.generacionVal} (${d.tipoLevVal})${d.fechaFormateada && d.fechaFormateada !== 'N/A' ? ` [${d.fechaFormateada}]` : ''}`
+    
     if (!uniqueLotesMap.has(label)) {
       uniqueLotesMap.set(label, {
         id: index.toString(),
         label,
-        data: d
+        data: d,
+        gen: d.generacionVal
       })
     }
   })
   const uniqueLotes = Array.from(uniqueLotesMap.values())
 
-  const [loteAId, setLoteAId] = useState<string>(uniqueLotes[0]?.id || "")
-  const [loteBId, setLoteBId] = useState<string>(uniqueLotes[1]?.id || uniqueLotes[0]?.id || "")
+  const [loteAId, setLoteAId] = useState<string>("")
+  const [loteBId, setLoteBId] = useState<string>("")
 
-  const loteA = uniqueLotes.find((l: any) => l.id === loteAId)
-  const loteB = uniqueLotes.find((l: any) => l.id === loteBId)
+  useEffect(() => {
+    if (uniqueLotes.length > 0) {
+      if (!loteAId || !uniqueLotes.some(l => l.id === loteAId)) {
+        setLoteAId(uniqueLotes[0].id)
+      }
+      if (!loteBId || !uniqueLotes.some(l => l.id === loteBId)) {
+        setLoteBId(uniqueLotes[1]?.id || uniqueLotes[0].id)
+      }
+    }
+  }, [uniqueLotes, loteAId, loteBId])
+
+  const loteA = uniqueLotes.find((l: any) => l.id === loteAId) || uniqueLotes[0]
+  const loteB = uniqueLotes.find((l: any) => l.id === loteBId) || uniqueLotes[1] || uniqueLotes[0]
 
   // Generar KPIs para CultureSummaryColumn
   const getKpis = (lote: any) => {
@@ -211,63 +258,41 @@ export function ComparacionTab() {
     <div className="flex flex-col gap-4 bg-[#0a0a0a] p-2 rounded-lg">
       
       {/* Filtros Globales y de Selección Combinados */}
-      <div className="flex flex-col xl:flex-row gap-4 bg-[#121212] border border-yellow-500/20 p-3 rounded-md shadow-lg overflow-x-auto">
-        <div className="flex-1 min-w-[120px] flex flex-col gap-1.5">
-          <label className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Tipo de Levadura</label>
-          <select 
-            value={filterTipo}
-            onChange={e => setFilterTipo(e.target.value)}
-            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
-          >
-            <option value="TODOS">TODOS</option>
-            {tiposUnicos.map((c: string) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[120px] flex flex-col gap-1.5">
-          <label className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Dobleteo</label>
-          <select 
-            value={filterDobleteo}
-            onChange={e => setFilterDobleteo(e.target.value)}
-            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
-          >
-            <option value="TODOS">TODOS</option>
-            {dobleteosUnicos.map((d: string) => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[120px] flex flex-col gap-1.5 border-r border-zinc-800 pr-4">
-          <label className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Estado</label>
-          <select 
-            value={filterEstado}
-            onChange={e => setFilterEstado(e.target.value)}
-            className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-yellow-500"
-          >
-            <option value="TODOS">TODOS</option>
-            {estadosUnicos.map((e: string) => <option key={e} value={e}>{e}</option>)}
-          </select>
+      <div className="flex flex-col gap-3 bg-[#121212] border border-yellow-500/20 p-3 rounded-md shadow-lg">
+        {/* Barra de Filtros en orden estándar */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-zinc-800/80 pb-3">
+          <CheckboxFilter label="Gen." options={uniqueGeneraciones} selectedOptions={filterGeneracion} onChange={setFilterGeneracion} isOpen={isOpenGeneracion} setIsOpen={setIsOpenGeneracion} />
+          <CheckboxFilter label="Tipo de Levadura" options={uniqueTipos} selectedOptions={filterTipo} onChange={setFilterTipo} isOpen={isOpenTipo} setIsOpen={setIsOpenTipo} />
+          <CheckboxFilter label="Dobleteo" options={uniqueDobleteos} selectedOptions={filterDobleteo} onChange={setFilterDobleteo} isOpen={isOpenDobleteo} setIsOpen={setIsOpenDobleteo} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanque} onChange={setFilterTanque} isOpen={isOpenTanque} setIsOpen={setIsOpenTanque} />
+          <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFecha} onChange={setFilterFecha} isOpen={isOpenFecha} setIsOpen={setIsOpenFecha} />
         </div>
 
-        <div className="flex-[1.5] min-w-[180px] flex flex-col gap-1.5">
-          <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">🔵 Cultivo A</label>
-          <select 
-            value={loteAId}
-            onChange={e => setLoteAId(e.target.value)}
-            className="bg-black border border-blue-500/50 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-blue-500"
-          >
-            <option value="" disabled>Seleccione un cultivo...</option>
-            {uniqueLotes.map((l: any) => <option key={`A-${l.id}`} value={l.id}>{l.label}</option>)}
-          </select>
-        </div>
+        {/* Selectores de Cultivo A y B */}
+        <div className="flex flex-col md:flex-row gap-4 pt-1">
+          <div className="flex-1 min-w-[220px] flex flex-col gap-1.5">
+            <label className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">🔵 Cultivo A (Gen.)</label>
+            <select 
+              value={loteAId}
+              onChange={e => setLoteAId(e.target.value)}
+              className="bg-black border border-blue-500/50 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-blue-500 truncate"
+            >
+              <option value="" disabled>Seleccione un cultivo...</option>
+              {uniqueLotes.map((l: any) => <option key={`A-${l.id}`} value={l.id}>{l.label}</option>)}
+            </select>
+          </div>
 
-        <div className="flex-[1.5] min-w-[180px] flex flex-col gap-1.5">
-          <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">🔴 Cultivo B</label>
-          <select 
-            value={loteBId}
-            onChange={e => setLoteBId(e.target.value)}
-            className="bg-black border border-red-500/50 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-red-500"
-          >
-            <option value="" disabled>Seleccione un cultivo...</option>
-            {uniqueLotes.map((l: any) => <option key={`B-${l.id}`} value={l.id}>{l.label}</option>)}
-          </select>
+          <div className="flex-1 min-w-[220px] flex flex-col gap-1.5">
+            <label className="text-red-500 text-[10px] font-bold uppercase tracking-wider">🔴 Cultivo B (Gen.)</label>
+            <select 
+              value={loteBId}
+              onChange={e => setLoteBId(e.target.value)}
+              className="bg-black border border-red-500/50 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none focus:border-red-500 truncate"
+            >
+              <option value="" disabled>Seleccione un cultivo...</option>
+              {uniqueLotes.map((l: any) => <option key={`B-${l.id}`} value={l.id}>{l.label}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -275,7 +300,7 @@ export function ComparacionTab() {
       <div className="flex flex-col gap-4">
         {/* Lado A */}
         <CultureSummaryColumn
-          cultureName={`CULTIVO A: ${loteA?.data?.tipoLev || 'N/A'}`}
+          cultureName={`CULTIVO A: ${loteA?.data?.tipoLevVal || loteA?.data?.tipoLev || 'N/A'} (Gen: ${loteA?.gen || 'N/A'})`}
           accentColor="#3b82f6"
           kpis={kpisA}
           vitalityIndex={loteA?.data?.viab || 0}
@@ -288,7 +313,7 @@ export function ComparacionTab() {
 
         {/* Lado B */}
         <CultureSummaryColumn
-          cultureName={`CULTIVO B: ${loteB?.data?.tipoLev || 'N/A'}`}
+          cultureName={`CULTIVO B: ${loteB?.data?.tipoLevVal || loteB?.data?.tipoLev || 'N/A'} (Gen: ${loteB?.gen || 'N/A'})`}
           accentColor="#ef4444"
           kpis={kpisB}
           vitalityIndex={loteB?.data?.viab || 0}

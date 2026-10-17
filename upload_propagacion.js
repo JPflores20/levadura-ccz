@@ -1,18 +1,20 @@
 const XLSX = require("xlsx");
 const fs = require("fs");
+const path = require("path");
 
-// Función para convertir fecha serial de Excel (ej: 45180) a string "DD-MMM-YY"
+// Función para convertir fecha serial de Excel (ej: 45180) a string "YYYY-MM-DD"
 function formatExcelDate(excelDate) {
   if (!excelDate) return "N/A";
   if (typeof excelDate === "string") return excelDate;
   
-  const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
-  if (isNaN(date.getTime())) return "N/A";
-  
-  const formatter = new Intl.DateTimeFormat('es-MX', {
-    day: '2-digit', month: 'short', year: '2-digit'
-  });
-  return formatter.format(date).replace('.', '');
+  const numVal = Number(excelDate);
+  if (!isNaN(numVal) && numVal > 20000 && numVal < 100000) {
+    const date = new Date(Math.round((numVal - 25569) * 86400 * 1000));
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() + tzOffset);
+    return localDate.toISOString().split("T")[0];
+  }
+  return excelDate.toString().trim();
 }
 
 async function uploadPropagacion() {
@@ -52,6 +54,8 @@ async function uploadPropagacion() {
   const dataRows = rows.slice(headerRowIndex + 1);
 
   const findColumnIndex = (matchFn) => {
+    const hIdx = headers.findIndex(h => h && matchFn(h.toString().trim()));
+    if (hIdx !== -1) return hIdx;
     for (let r = 0; r < Math.min(rows.length, 10); r++) {
       if (!rows[r]) continue;
       for (let c = 0; c < rows[r].length; c++) {
@@ -73,6 +77,9 @@ async function uploadPropagacion() {
   const idxHora = findColumnIndex(h => h.toLowerCase().includes("hora inicio") || h.toLowerCase() === "hora");
   const idxTipoLev = findColumnIndex(h => h.toLowerCase().includes("tipo de lev"));
   const idxTanque = findColumnIndex(h => h.toLowerCase().trim() === "tanque");
+  const idxGen = findColumnIndex(h => h.toLowerCase().includes("gen.") || h.toLowerCase() === "gen" || h.toLowerCase().includes("generaci"));
+  const idxVuelta = findColumnIndex(h => h.toLowerCase().includes("vuelta") || h.toLowerCase() === "vta" || h.toLowerCase() === "vta.");
+  const idxCodigo = findColumnIndex(h => h.toLowerCase().includes("codigo de cultivo") || h.toLowerCase().includes("codigo"));
   
   let idxDobleteo = findColumnIndex(h => h.toLowerCase().includes("doblete"));
   if (idxDobleteo === -1) idxDobleteo = 19; 
@@ -105,11 +112,11 @@ async function uploadPropagacion() {
       }
 
       let tipoLevVal = idxTipoLev >= 0 ? row[idxTipoLev] : "General";
-      let tanqueVal = idxTanque >= 0 ? row[idxTanque] : "N/A";
-      tanqueVal = tanqueVal ? tanqueVal.toString() : "N/A";
-      
-      let dobleteoVal = idxDobleteo >= 0 ? row[idxDobleteo] : "N/A";
-      dobleteoVal = dobleteoVal ? dobleteoVal.toString() : "N/A";
+      let tanqueVal = idxTanque >= 0 ? (row[idxTanque] ? row[idxTanque].toString().trim() : "N/A") : "N/A";
+      let dobleteoVal = idxDobleteo >= 0 ? (row[idxDobleteo] ? row[idxDobleteo].toString().trim() : "N/A") : "N/A";
+      let genVal = idxGen >= 0 && row[idxGen] !== undefined && row[idxGen] !== null && row[idxGen] !== "" ? row[idxGen].toString().trim() : "N/A";
+      let vueltaVal = idxVuelta >= 0 && row[idxVuelta] !== undefined && row[idxVuelta] !== null && row[idxVuelta] !== "" ? row[idxVuelta].toString().trim() : "1";
+      let codigoVal = idxCodigo >= 0 && row[idxCodigo] !== undefined && row[idxCodigo] !== null ? row[idxCodigo].toString().trim() : "N/A";
 
       payload.push({
         fecha: fechaVal,
@@ -117,6 +124,9 @@ async function uploadPropagacion() {
         tipoLev: tipoLevVal,
         tanque: tanqueVal,
         dobleteo: dobleteoVal,
+        generacion: genVal,
+        vuelta: vueltaVal,
+        codigoCultivo: codigoVal,
         plato: Number(row[idxPlato]) || 0,
         ph: Number(row[idxPh]) || 0,
         conteo: Number(row[idxConteo]) || 0,
@@ -135,25 +145,20 @@ async function uploadPropagacion() {
     return;
   }
 
-  console.log(`Se procesaron ${payload.length} filas válidas. Enviando a la API...`);
-
+  console.log(`Se procesaron ${payload.length} filas válidas. Guardando en database.json...`);
+  
+  const DB_FILE = path.join(__dirname, "database.json");
+  let currentDb = {};
   try {
-    const response = await fetch("http://localhost:3000/api/sync-propagation", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      const apiResponse = await response.json();
-      console.log("¡Datos subidos exitosamente!");
-      console.log("Respuesta:", apiResponse.message);
-    } else {
-      console.error("Error al subir los datos:", response.status, response.statusText);
+    if (fs.existsSync(DB_FILE)) {
+      currentDb = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
     }
-  } catch (error) {
-    console.error("Error al conectar con la API (Asegúrate de que Next.js esté corriendo en el puerto 3000):", error.message);
-  }
+  } catch(e) {}
+  
+  currentDb.rawData = payload;
+  currentDb.ultimaActualizacion = new Date().toISOString();
+  fs.writeFileSync(DB_FILE, JSON.stringify(currentDb, null, 2), "utf-8");
+  console.log("database.json actualizado con éxito con", payload.length, "registros!");
 }
 
 uploadPropagacion();

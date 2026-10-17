@@ -34,6 +34,10 @@ export function CineticaTab() {
     return null;
   }
 
+  const [filterGeneracion, setFilterGeneracion] = useState<string[]>([])
+  const [isOpenGeneracion, setIsOpenGeneracion] = useState(false)
+  const [filterVuelta, setFilterVuelta] = useState<string[]>([])
+  const [isOpenVuelta, setIsOpenVuelta] = useState(false)
   const [filterFechas, setFilterFechas] = useState<string[]>([])
   const [isOpenFechas, setIsOpenFechas] = useState(false)
   const [filterEtapa, setFilterEtapa] = useState<string[]>([])
@@ -46,6 +50,12 @@ export function CineticaTab() {
   const [isOpenMarca, setIsOpenMarca] = useState(false)
 
   // Extracción de valores únicos para los filtros
+  const uniqueGeneraciones = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Generacion', 'Generación', 'Gen', 'Gen.', 'GeneracionLevadura'])?.toString().trim()))).filter(Boolean) as string[]
+  uniqueGeneraciones.sort()
+
+  const uniqueVueltas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Vuelta', 'Vueltas', 'Vta', 'Vta.'])?.toString().trim()))).filter(Boolean) as string[]
+  uniqueVueltas.sort((a, b) => Number(a) - Number(b))
+
   const uniqueFechas = Array.from(new Set(rawData.map((d: any) => formatExcelDate(getProp(d, ['Fecha']))))).filter(Boolean) as string[]
   const uniqueEtapas = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Etapa'])?.toString().trim()))).filter(Boolean) as string[]
   const uniqueDias = Array.from(new Set(rawData.map((d: any) => getProp(d, ['Dias', 'Días'])?.toString().trim()))).filter(Boolean) as string[]
@@ -57,15 +67,19 @@ export function CineticaTab() {
   const uniqueTanques = Array.from(new Set(tanquesSourceData.map((d: any) => getProp(d, ['Tanque', 'TCC', 'Lote', 'Item'])?.toString().trim().toUpperCase()))).filter(Boolean) as string[]
 
   // Filtrado de rawData
-  const hasAnyFilter = filterFechas.length > 0 || filterEtapa.length > 0 || filterDias.length > 0 || filterTanques.length > 0 || filterMarca.length > 0;
+  const hasAnyFilter = filterGeneracion.length > 0 || filterVuelta.length > 0 || filterFechas.length > 0 || filterEtapa.length > 0 || filterDias.length > 0 || filterTanques.length > 0 || filterMarca.length > 0;
   
   const filteredData = !hasAnyFilter ? [] : rawData.filter((d: any) => {
+    const dGen = getProp(d, ['Generacion', 'Generación', 'Gen', 'Gen.', 'GeneracionLevadura'])?.toString().trim()
+    const dVuelta = getProp(d, ['Vuelta', 'Vueltas', 'Vta', 'Vta.'])?.toString().trim()
     const dFecha = formatExcelDate(getProp(d, ['Fecha']))
     const dEtapa = getProp(d, ['Etapa'])?.toString().trim()
     const dDias = getProp(d, ['Dias', 'Días'])?.toString().trim()
     const dTanque = getProp(d, ['Tanque', 'TCC', 'Lote', 'Item'])?.toString().trim().toUpperCase()
     const dMarca = getProp(d, ['Marca', 'Cepa'])?.toString().trim().toUpperCase()
 
+    if (filterGeneracion.length > 0 && !filterGeneracion.includes(dGen)) return false
+    if (filterVuelta.length > 0 && !filterVuelta.includes(dVuelta)) return false
     if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
     if (filterEtapa.length > 0 && !filterEtapa.includes(dEtapa)) return false
     if (filterDias.length > 0 && !filterDias.includes(dDias)) return false
@@ -226,6 +240,8 @@ export function CineticaTab() {
       {/* Selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-3 shadow-lg relative">
         <div className="flex flex-wrap items-center gap-4">
+          <CheckboxFilter label="Gen." options={uniqueGeneraciones} selectedOptions={filterGeneracion} onChange={setFilterGeneracion} isOpen={isOpenGeneracion} setIsOpen={setIsOpenGeneracion} />
+          <CheckboxFilter label="Vuelta" options={uniqueVueltas} selectedOptions={filterVuelta} onChange={setFilterVuelta} isOpen={isOpenVuelta} setIsOpen={setIsOpenVuelta} />
           <CheckboxFilter label="Marca" options={uniqueMarcas} selectedOptions={filterMarca} onChange={setFilterMarca} isOpen={isOpenMarca} setIsOpen={setIsOpenMarca} />
           <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
           <CheckboxFilter label="Etapa" options={uniqueEtapas} selectedOptions={filterEtapa} onChange={setFilterEtapa} isOpen={isOpenEtapa} setIsOpen={setIsOpenEtapa} />

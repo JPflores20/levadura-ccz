@@ -19,18 +19,17 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 export function PropagationTab() {
   const [realData, setRealData] = useState<any>(null)
 
-  // Nuevo estado para el filtro de Código de Cultivo
-  const [filterCodigos, setFilterCodigos] = useState<string[]>([])
-  const [isOpenCodigos, setIsOpenCodigos] = useState(false)
-
-  const [filterFechas, setFilterFechas] = useState<string[]>([])
-  const [isOpenFechas, setIsOpenFechas] = useState(false)
+  // Estados para filtros
+  const [filterGeneracion, setFilterGeneracion] = useState<string[]>([])
+  const [isOpenGeneracion, setIsOpenGeneracion] = useState(false)
   const [filterTipos, setFilterTipos] = useState<string[]>([])
   const [isOpenTipos, setIsOpenTipos] = useState(false)
-  const [filterTanques, setFilterTanques] = useState<string[]>([])
-  const [isOpenTanques, setIsOpenTanques] = useState(false)
   const [filterDobleteo, setFilterDobleteo] = useState<string[]>([])
   const [isOpenDobleteo, setIsOpenDobleteo] = useState(false)
+  const [filterTanques, setFilterTanques] = useState<string[]>([])
+  const [isOpenTanques, setIsOpenTanques] = useState(false)
+  const [filterFechas, setFilterFechas] = useState<string[]>([])
+  const [isOpenFechas, setIsOpenFechas] = useState(false)
 
   const { data: dbData } = useSWR('/api/get-propagation', fetcher, { 
     revalidateOnFocus: false,
@@ -50,30 +49,36 @@ export function PropagationTab() {
     fecha: formatExcelDate(d.fecha)
   }))
   
-  // Agregamos la extracción de códigos únicos
-  const uniqueCodigos = Array.from(new Set(rawDataRaw.map((d: any) => (d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo)?.toString().trim().toUpperCase()))).filter(c => c && c !== "N/A" && c !== "UNDEFINED") as string[]
-  const uniqueFechas = Array.from(new Set(rawDataRaw.map((d: any) => d.fecha?.toString().trim()))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
-  const uniqueTipos = Array.from(new Set(rawDataRaw.map((d: any) => d.tipoLev?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
-  const uniqueTanques = Array.from(new Set(rawDataRaw.map((d: any) => d.tanque?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  // Extracción de valores únicos
+  const uniqueGeneraciones = Array.from(new Set(rawDataRaw.map((d: any) => (d["Gen."] || d.generacion || d.gen || d["Gen"] || d["Generacion"] || d["Generación"] || d.Gen)?.toString().trim()))).filter(g => g && g !== "N/A" && g !== "UNDEFINED") as string[]
+  uniqueGeneraciones.sort()
+
+  const uniqueTipos = Array.from(new Set(rawDataRaw.map((d: any) => (d.tipoLev || d.Tipo || d.tipo || d["Tipo de Lev"])?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED" && t !== "GENERAL") as string[]
+  uniqueTipos.sort()
+
   const uniqueDobleteo = Array.from(new Set(rawDataRaw.map((d: any) => (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  uniqueDobleteo.sort()
+
+  const uniqueTanques = Array.from(new Set(rawDataRaw.map((d: any) => (d.tanque || d.Tanque || d["Tanque"])?.toString().trim().toUpperCase()))).filter(t => t && t !== "N/A" && t !== "UNDEFINED") as string[]
+  uniqueTanques.sort()
+
+  const uniqueFechas = Array.from(new Set(rawDataRaw.map((d: any) => d.fecha?.toString().trim()))).filter(f => f && f !== "N/A" && f !== "UNDEFINED") as string[]
 
   // Apply filters
-  const hasAnyFilter = filterCodigos.length > 0 || filterFechas.length > 0 || filterTipos.length > 0 || filterTanques.length > 0 || filterDobleteo.length > 0;
+  const hasAnyFilter = filterGeneracion.length > 0 || filterTipos.length > 0 || filterDobleteo.length > 0 || filterTanques.length > 0 || filterFechas.length > 0;
   
   const rawData = !hasAnyFilter ? [] : rawDataRaw.filter((d: any) => {
-    const dCodigo = (d["Codigo de Cultivo"] || d.codigoCultivo || d.Codigo || d.codigo)?.toString().trim().toUpperCase()
-    const dFecha = d.fecha?.toString().trim()
-    const dTipo = d.tipoLev?.toString().trim().toUpperCase()
-    const dTanque = d.tanque?.toString().trim().toUpperCase()
+    const dGen = (d["Gen."] || d.generacion || d.gen || d["Gen"] || d["Generacion"] || d["Generación"] || d.Gen)?.toString().trim()
+    const dTipo = (d.tipoLev || d.Tipo || d.tipo || d["Tipo de Lev"])?.toString().trim().toUpperCase()
     const dDobleteo = (d.dobleteo || d.Dobleteo || d.doblete || d.Doblete)?.toString().trim()
+    const dTanque = (d.tanque || d.Tanque || d["Tanque"])?.toString().trim().toUpperCase()
+    const dFecha = d.fecha?.toString().trim()
 
-    // Filtramos por el Código primero
-    if (filterCodigos.length > 0 && !filterCodigos.includes(dCodigo)) return false
-    
-    if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
+    if (filterGeneracion.length > 0 && !filterGeneracion.includes(dGen)) return false
     if (filterTipos.length > 0 && !filterTipos.includes(dTipo)) return false
-    if (filterTanques.length > 0 && !filterTanques.includes(dTanque)) return false
     if (filterDobleteo.length > 0 && !filterDobleteo.includes(dDobleteo)) return false
+    if (filterTanques.length > 0 && !filterTanques.includes(dTanque)) return false
+    if (filterFechas.length > 0 && !filterFechas.includes(dFecha)) return false
     return true
   })
 
@@ -82,6 +87,8 @@ export function PropagationTab() {
     tanque: d.tanque,
     fecha: d.fecha,
     tipoLev: d.tipoLev,
+    generacion: d["Gen."] || d.generacion || d.gen || d["Gen"],
+    dobleteo: d.dobleteo || d.Dobleteo,
     viabilidad: d.viab || 0,
     vigorosas: d.vigor || 0,
     conteo: d.conteo || 0,
@@ -165,10 +172,10 @@ export function PropagationTab() {
 
         
         <div className="flex flex-wrap xl:flex-nowrap items-center justify-start xl:justify-end gap-2 w-full">
-          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
-          <CheckboxFilter label="Tipo de Lev" options={uniqueTipos} selectedOptions={filterTipos} onChange={setFilterTipos} isOpen={isOpenTipos} setIsOpen={setIsOpenTipos} />
-          <CheckboxFilter label="Código" options={uniqueCodigos} selectedOptions={filterCodigos} onChange={setFilterCodigos} isOpen={isOpenCodigos} setIsOpen={setIsOpenCodigos} />
+          <CheckboxFilter label="Gen." options={uniqueGeneraciones} selectedOptions={filterGeneracion} onChange={setFilterGeneracion} isOpen={isOpenGeneracion} setIsOpen={setIsOpenGeneracion} />
+          <CheckboxFilter label="Tipo de Levadura" options={uniqueTipos} selectedOptions={filterTipos} onChange={setFilterTipos} isOpen={isOpenTipos} setIsOpen={setIsOpenTipos} />
           <CheckboxFilter label="Dobleteo" options={uniqueDobleteo} selectedOptions={filterDobleteo} onChange={setFilterDobleteo} isOpen={isOpenDobleteo} setIsOpen={setIsOpenDobleteo} />
+          <CheckboxFilter label="Tanque" options={uniqueTanques} selectedOptions={filterTanques} onChange={setFilterTanques} isOpen={isOpenTanques} setIsOpen={setIsOpenTanques} />
           <CalendarFilter label="Fecha" options={uniqueFechas} selectedOptions={filterFechas} onChange={setFilterFechas} isOpen={isOpenFechas} setIsOpen={setIsOpenFechas} />
         </div>
       </div>
