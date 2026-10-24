@@ -1,37 +1,40 @@
-import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import { firestoreDatabase } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+/**
+ * @fileoverview Endpoint GET para consultar los datos y estadísticas de Propagación de Levadura.
+ * Utiliza `leer_documento_respaldado` con reconstrucción de fragmentos en Firestore y respaldo en `database.json`.
+ */
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { NextResponse } from "next/server"
+import { leer_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
+import { normalizar_fila_propagacion } from "@/lib/utils"
 
-const DB_FILE = path.join(process.cwd(), 'database.json')
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
-export async function GET() {
+/**
+ * Obtiene los registros normalizados y estadísticas de propagación desde Firestore o disco local.
+ *
+ * @returns {Promise<NextResponse>} Respuesta JSON con el paquete de propagación.
+ */
+export async function GET(): Promise<NextResponse> {
   try {
-    // 1. Intentar leer de Firebase primero (persistente en producción)
-    if (firestoreDatabase) {
-      try {
-        const docRef = doc(firestoreDatabase, "dashboards", "propagacion_stats")
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          return NextResponse.json(docSnap.data())
-        }
-      } catch (fbError) {
-        console.error("Error leyendo de Firebase:", fbError)
-      }
+    const datos_documento = await leer_documento_respaldado("propagacion_stats", "database.json")
+
+    if (datos_documento) {
+      const registros_normalizados = Array.isArray(datos_documento.rawData)
+        ? datos_documento.rawData.map((fila_cruda: Record<string, any>) =>
+            normalizar_fila_propagacion(fila_cruda)
+          )
+        : []
+
+      return NextResponse.json({
+        ...datos_documento,
+        rawData: registros_normalizados
+      })
     }
 
-    // 2. Fallback a archivo local (para desarrollo)
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf-8')
-      return NextResponse.json(JSON.parse(data))
-    }
-    
-    return NextResponse.json({ stats: null, rawData: null })
-  } catch (error) {
-    return NextResponse.json({ stats: null, rawData: null }, { status: 500 })
+    return NextResponse.json({ message: "No data found yet", rawData: [] }, { status: 404 })
+  } catch (error_general) {
+    console.error("Error leyendo datos de propagación:", error_general)
+    return NextResponse.json({ error: "Error leyendo datos" }, { status: 500 })
   }
 }

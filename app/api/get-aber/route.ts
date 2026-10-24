@@ -1,30 +1,32 @@
-import { NextResponse } from 'next/server'
-import { firestoreDatabase } from '@/lib/firebase'
-import { doc, getDoc } from "firebase/firestore"
-import fs from 'fs'
-import path from 'path'
+/**
+ * @fileoverview Endpoint GET para consultar los datos de Auditoría y Validación de equipos Abber.
+ * Utiliza `leer_documento_respaldado` con reconstrucción de fragmentos en Firestore y respaldo en `database_aber.json`.
+ */
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { NextResponse } from "next/server"
+import { leer_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
 
-const DB_FILE = path.join(process.cwd(), 'database_aber.json')
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
-export async function GET() {
+/**
+ * Obtiene los registros de validación Abber desde Firestore o `database_aber.json`.
+ *
+ * @returns {Promise<NextResponse>} Respuesta JSON con los registros de validación Abber.
+ */
+export async function GET(): Promise<NextResponse> {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const fileData = fs.readFileSync(DB_FILE, 'utf-8')
-      return NextResponse.json(JSON.parse(fileData))
+    const datos_documento = await leer_documento_respaldado("aber_stats", "database_aber.json")
+    if (
+      datos_documento &&
+      Array.isArray(datos_documento.rawData) &&
+      datos_documento.rawData.length > 0
+    ) {
+      return NextResponse.json(datos_documento)
     }
-    
-    // Fallback Firebase
-    const docRef = doc(firestoreDatabase, "dashboards", "aber_stats")
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      return NextResponse.json(docSnap.data())
-    }
-    
-    return NextResponse.json({ rawData: [] })
-  } catch (error) {
-    return NextResponse.json({ rawData: [] })
+    return NextResponse.json({ message: "No data found yet", rawData: [] }, { status: 404 })
+  } catch (error_general) {
+    console.error("Error leyendo datos Aber:", error_general)
+    return NextResponse.json({ error: "Error leyendo datos" }, { status: 500 })
   }
 }

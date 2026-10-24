@@ -1,93 +1,135 @@
+/**
+ * @fileoverview Componentes estructurales de tarjeta (Card, CardHeader, CardTitle, CardContent, CardFooter).
+ */
+
 import * as React from "react"
+import { combinar_clases_css } from "@/lib/utils"
 
-import { cn } from "@/lib/utils"
-
+/**
+ * Contenedor principal de tarjeta.
+ */
 function Card({
-  className,
-  size = "default",
-  ...props
+  className: clases_personalizadas,
+  size: tamano_tarjeta = "default",
+  ...propiedades_restantes
 }: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
   return (
     <div
       data-slot="card"
-      data-size={size}
-      className={cn(
+      data-size={tamano_tarjeta}
+      className={combinar_clases_css(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Encabezado de tarjeta.
+ */
+function CardHeader({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-header"
-      className={cn(
+      className={combinar_clases_css(
         "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Título de tarjeta.
+ */
+function CardTitle({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn(
+      className={combinar_clases_css(
         "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Descripción secundaria de tarjeta.
+ */
+function CardDescription({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
+      className={combinar_clases_css("text-sm text-muted-foreground", clases_personalizadas)}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Contenedor de acción en el encabezado de la tarjeta.
+ */
+function CardAction({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-action"
-      className={cn(
+      className={combinar_clases_css(
         "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Cuerpo de contenido principal de la tarjeta.
+ */
+function CardContent({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-(--card-spacing)", className)}
-      {...props}
+      className={combinar_clases_css("px-(--card-spacing)", clases_personalizadas)}
+      {...propiedades_restantes}
     />
   )
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Pie de tarjeta.
+ */
+function CardFooter({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn(
+      className={combinar_clases_css(
         "flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
@@ -99,5 +141,5 @@ export {
   CardTitle,
   CardAction,
   CardDescription,
-  CardContent,
+  CardContent
 }

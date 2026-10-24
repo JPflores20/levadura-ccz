@@ -1,49 +1,52 @@
 "use client"
 
+/**
+ * @fileoverview Componentes de ventana modal (Dialog) basados en Base UI.
+ */
+
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
-
-import { cn } from "@/lib/utils"
+import { combinar_clases_css } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+function Dialog({ ...propiedades_dialogo }: DialogPrimitive.Root.Props) {
+  return <DialogPrimitive.Root data-slot="dialog" {...propiedades_dialogo} />
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+function DialogTrigger({ ...propiedades_disparador }: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...propiedades_disparador} />
 }
 
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+function DialogPortal({ ...propiedades_portal }: DialogPrimitive.Portal.Props) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...propiedades_portal} />
 }
 
-function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+function DialogClose({ ...propiedades_cierre }: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...propiedades_cierre} />
 }
 
 function DialogOverlay({
-  className,
-  ...props
+  className: clases_personalizadas,
+  ...propiedades_restantes
 }: DialogPrimitive.Backdrop.Props) {
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
-      className={cn(
+      className={combinar_clases_css(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
 
 function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
+  className: clases_personalizadas,
+  children: contenido_modal,
+  showCloseButton: mostrar_boton_cierre = true,
+  ...propiedades_restantes
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
@@ -52,26 +55,19 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className={cn(
+        className={combinar_clases_css(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
+          clases_personalizadas
         )}
-        {...props}
+        {...propiedades_restantes}
       >
-        {children}
-        {showCloseButton && (
+        {contenido_modal}
+        {mostrar_boton_cierre && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-2"
-                size="icon-sm"
-              />
-            }
+            render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm" />}
           >
-            <XIcon
-            />
+            <XIcon />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -80,68 +76,69 @@ function DialogContent({
   )
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
+      className={combinar_clases_css("flex flex-col gap-2", clases_personalizadas)}
+      {...propiedades_restantes}
     />
   )
 }
 
 function DialogFooter({
-  className,
-  showCloseButton = false,
-  children,
-  ...props
+  className: clases_personalizadas,
+  showCloseButton: mostrar_boton_cierre = false,
+  children: contenido_pie,
+  ...propiedades_restantes
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
 }) {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn(
+      className={combinar_clases_css(
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     >
-      {children}
-      {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
-        </DialogPrimitive.Close>
+      {contenido_pie}
+      {mostrar_boton_cierre && (
+        <DialogPrimitive.Close render={<Button variant="outline" />}>Close</DialogPrimitive.Close>
       )}
     </div>
   )
 }
 
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+function DialogTitle({
+  className: clases_personalizadas,
+  ...propiedades_restantes
+}: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn(
-        "text-base leading-none font-medium",
-        className
-      )}
-      {...props}
+      className={combinar_clases_css("text-base leading-none font-medium", clases_personalizadas)}
+      {...propiedades_restantes}
     />
   )
 }
 
 function DialogDescription({
-  className,
-  ...props
+  className: clases_personalizadas,
+  ...propiedades_restantes
 }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn(
+      className={combinar_clases_css(
         "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
-        className
+        clases_personalizadas
       )}
-      {...props}
+      {...propiedades_restantes}
     />
   )
 }
@@ -156,5 +153,5 @@ export {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 }

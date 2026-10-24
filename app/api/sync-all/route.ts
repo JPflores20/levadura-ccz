@@ -1,122 +1,100 @@
-import { NextResponse } from 'next/server'
-import { firestoreDatabase } from '@/lib/firebase'
-import { doc, setDoc } from "firebase/firestore"
-import { calculateMean, calculateStdDev, calculateCpCpk } from "@/lib/statistics"
-import fs from 'fs'
-import path from 'path'
+/**
+ * @fileoverview Endpoint maestro POST para sincronizar en un solo paso Propagación, Cinéticas y Abber
+ * desde el botón con Office Script en Excel hacia Firestore (con fragmentación automática) y archivos locales.
+ */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+import { NextResponse } from "next/server"
+import { procesar_lote_propagacion } from "@/lib/services/servicio_sincronizacion_propagacion"
+import { procesar_lote_cinetica } from "@/lib/services/servicio_sincronizacion_cinetica"
+import { guardar_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
+import {
+  CABECERAS_CORS_API,
+  construir_respuesta_preflight_cors,
+  verificar_autorizacion_sincronizacion
+} from "@/lib/services/servicio_seguridad_api"
+import { es_arreglo_registros_valido } from "@/lib/types/contratos_dominio"
+
+/**
+ * Responde a las peticiones preflight CORS enviadas desde Excel Online / Desktop.
+ *
+ * @returns {NextResponse} Respuesta vacía con cabeceras CORS habilitadas.
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return construir_respuesta_preflight_cors()
 }
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
-}
-
-export async function POST(request: Request) {
-  try {
-    const { propagacion, cineticas } = await request.json()
-
-    if (!propagacion || !cineticas) {
-      return NextResponse.json({ error: "Faltan hojas en el payload" }, { status: 400, headers: corsHeaders })
-    }
-
-    // 1. PROCESAR PROPAGACION
-    const statsPropagacion = procesarPropagacion(propagacion)
-    const dataPropagacion = {
-      ultimaActualizacion: new Date().toISOString(),
-      stats: statsPropagacion,
-      rawData: propagacion
-    }
-    await setDoc(doc(firestoreDatabase, "dashboards", "propagacion_stats"), dataPropagacion).catch(() => {})
-    try { fs.writeFileSync(path.join(process.cwd(), 'database.json'), JSON.stringify(dataPropagacion, null, 2)) } catch(e){}
-
-    // 2. PROCESAR CINETICAS
-    const rawKineticData = procesarCineticas(cineticas)
-    const dataCineticas = {
-      ultimaActualizacion: new Date().toISOString(),
-      rawData: cineticas,
-      stats: rawKineticData
-    }
-    await setDoc(doc(firestoreDatabase, "dashboards", "kinetics_stats"), dataCineticas).catch(() => {})
-    try { fs.writeFileSync(path.join(process.cwd(), 'database_kinetics.json'), JSON.stringify(dataCineticas, null, 2)) } catch(e){}
-
-    return NextResponse.json({ success: true, message: "Todas las hojas procesadas" }, { headers: corsHeaders })
-  } catch (error) {
-    console.error("Error en sync-all:", error)
-    return NextResponse.json({ error: "Error procesando archivo general" }, { status: 500, headers: corsHeaders })
+/**
+ * Procesa y persiste los lotes de Propagación, Cinéticas y Abber recibidos desde el script de Excel.
+ *
+ * @param {Request} peticion_entrante - Objeto Request con el cuerpo JSON de las hojas del libro de Excel.
+ * @returns {Promise<NextResponse>} Respuesta JSON con el conteo de registros sincronizados por dominio.
+ */
+export async function POST(peticion_entrante: Request): Promise<NextResponse> {
+  const verificacion = verificar_autorizacion_sincronizacion(peticion_entrante)
+  if (!verificacion.autorizado && verificacion.respuesta_error) {
+    return verificacion.respuesta_error
   }
-}
 
-function procesarPropagacion(data: any[]) {
-    const viab: number[] = []; const ph: number[] = []; const conteo: number[] = []; const vigor: number[] = []; const plato: number[] = [];
-    data.forEach((row: any) => {
-      if (row.viab) viab.push(row.viab); if (row.ph) ph.push(row.ph); if (row.conteo) conteo.push(row.conteo);
-      if (row.vigor) vigor.push(row.vigor); if (row.plato) plato.push(row.plato);
-    })
-    const calcStats = (vals: number[], targetUSL: number, targetLSL: number, id: string, name: string) => {
-      if (vals.length === 0) return null
-      const mean = calculateMean(vals); const stdDev = calculateStdDev(vals, mean) || 0.001
-      const { cp, cpk, pp, ppk } = calculateCpCpk(vals, targetLSL, targetUSL, mean, stdDev)
-      let status = "red"
-      if (cpk >= 1.33) status = "green"
-      else if (cpk >= 1.0) status = "yellow"
-      return { id, indicatorName: name, media: Number(mean.toFixed(2)), standardDeviation: Number(stdDev.toFixed(2)), cp: Number(Math.max(0, cp).toFixed(2)), cpk: Number(Math.max(0, cpk).toFixed(2)), pp: Number(Math.max(0, pp).toFixed(2)), ppk: Number(Math.max(0, ppk).toFixed(2)), evaluationStatus: status }
+  try {
+    const cuerpo_peticion = await peticion_entrante.json()
+    const {
+      propagacion: lista_propagacion,
+      cheetah: lista_cheetah,
+      aber: lista_aber
+    } = cuerpo_peticion
+    const lista_cinetica = cuerpo_peticion.cinetica ?? cuerpo_peticion.cineticas
+
+    let conteo_propagacion = 0
+    let conteo_cinetica = 0
+    let conteo_aber = 0
+
+    if (es_arreglo_registros_valido(lista_propagacion)) {
+      const paquete_propagacion = procesar_lote_propagacion(lista_propagacion)
+      await guardar_documento_respaldado("propagacion_stats", "database.json", paquete_propagacion)
+      conteo_propagacion = lista_propagacion.length
     }
-    return [
-      calcStats(viab, 100, 95, "viab", "Viabilidad (%)"),
-      calcStats(conteo, 260, 180, "conteo", "Conteo Celular (x10^6/mL)"),
-      calcStats(vigor, 100, 88, "vig", "% Células Vigorosas"),
-      calcStats(ph, 5.5, 4.0, "ph", "pH"),
-      calcStats(plato, 16, 8, "plato", "°P en Mosto (Plato)")
-    ].filter(Boolean)
-}
 
-function procesarCineticas(rows: any[]) {
-    const groupedData: Record<string, any> = {}
-    const compuestos = ["Acetaldehido", "Diacetilo", "Acetato de etilo", "Propanol", "Isobutaol", "Isobutanol", "Acetato de isoamilo", "Isoamil alcohol", "Alcohol isoamilico", "Alcoholes Superiores", "Esteres", "Ésteres"]
+    if (es_arreglo_registros_valido(lista_cinetica)) {
+      const { payload: paquete_cinetica } = procesar_lote_cinetica(lista_cinetica)
+      await guardar_documento_respaldado(
+        "kinetics_stats",
+        "database_kinetics.json",
+        paquete_cinetica
+      )
+      conteo_cinetica = lista_cinetica.length
+    }
 
-    rows.forEach(row => {
-        // Case-insensitive key lookup
-        const getVal = (keys: string[]) => {
-            const rowKeys = Object.keys(row);
-            for (let targetKey of keys) {
-                const targetClean = targetKey.toLowerCase().replace(/[\s\.]/g, '');
-                for (let k of rowKeys) {
-                    const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
-                    if (kClean.includes(targetClean)) return row[k];
-                }
-            }
-            return undefined;
-        }
+    const registros_aber_entrantes = es_arreglo_registros_valido(lista_aber)
+      ? lista_aber
+      : es_arreglo_registros_valido(lista_cheetah)
+        ? lista_cheetah
+        : null
 
-        const fecha = getVal(["Fecha"]) || "N/A"; 
-        const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
-        const etapa = getVal(["Etapa"]) || "FERMENTACION";
-        const vuelta = row["Dias"] !== undefined ? row["Dias"] : (row["Días"] !== undefined ? row["Días"] : row["Día"] !== undefined ? row["Día"] : undefined);
-        const propagacion = "N/A";
-        const tanque = getVal(["Tanque", "TCC", "Lote", "Item"]) || "N/A";
-        
-        if (vuelta === undefined || vuelta === null || vuelta === "") return;
-        
-        compuestos.forEach(volatil => {
-            const rowVal = getVal([volatil]);
-            const val = parseFloat(rowVal)
-            if (!isNaN(val)) {
-                let volatilLimpio = volatil.toUpperCase().includes("DIACETILO") ? "DIACETILO" : volatil.toUpperCase()
-                if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
-                if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
-                if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
-                if (volatilLimpio === "ACETATO DE ETILO" || volatilLimpio === "ETILO") volatilLimpio = "ETILO";
-                if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
+    if (registros_aber_entrantes) {
+      const paquete_aber = {
+        lastUpdated: new Date().toISOString(),
+        ultimaActualizacion: new Date().toISOString(),
+        totalRecords: registros_aber_entrantes.length,
+        rawData: registros_aber_entrantes
+      }
+      await guardar_documento_respaldado("aber_stats", "database_aber.json", paquete_aber)
+      conteo_aber = registros_aber_entrantes.length
+    }
 
-                const key = `${fecha}_${propagacion}_${cepa}_${tanque}_${volatilLimpio}_${etapa}`
-                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, tanque, volatil: volatilLimpio, etapa, vueltas: {} }
-                groupedData[key].vueltas[vuelta.toString()] = val
-            }
-        })
-    })
-    return Object.values(groupedData)
+    return NextResponse.json(
+      {
+        message: "Sincronización Total Exitosa",
+        registrosPropagacion: conteo_propagacion,
+        registrosCinetica: conteo_cinetica,
+        registrosAber: conteo_aber
+      },
+      { status: 200, headers: CABECERAS_CORS_API }
+    )
+  } catch (error_general) {
+    console.error("Error en Sync-All:", error_general)
+    return NextResponse.json(
+      { error: "Error procesando los datos maestros" },
+      { status: 500, headers: CABECERAS_CORS_API }
+    )
+  }
 }

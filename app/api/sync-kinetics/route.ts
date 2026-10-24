@@ -1,94 +1,76 @@
-import { NextResponse } from 'next/server'
-import { firestoreDatabase } from '@/lib/firebase'
-import { doc, setDoc } from "firebase/firestore"
-import fs from 'fs'
-import path from 'path'
+/**
+ * @fileoverview Endpoint POST para sincronizar exclusivamente datos de Cinéticas y 4V.
+ * Incluye verificación de seguridad opcional, validación de esquema y particionamiento en Firestore.
+ */
 
-const DB_FILE = path.join(process.cwd(), 'database_kinetics.json')
+import { NextResponse } from "next/server"
+import { procesar_lote_cinetica } from "@/lib/services/servicio_sincronizacion_cinetica"
+import { guardar_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
+import {
+  CABECERAS_CORS_API,
+  construir_respuesta_preflight_cors,
+  verificar_autorizacion_sincronizacion
+} from "@/lib/services/servicio_seguridad_api"
+import {
+  es_arreglo_registros_valido,
+  extraer_arreglo_desde_cuerpo
+} from "@/lib/types/contratos_dominio"
 
-// CORS headers para permitir que Excel Web envíe peticiones
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+/**
+ * Responde a las peticiones preflight CORS.
+ *
+ * @returns {NextResponse} Respuesta vacía con cabeceras CORS habilitadas.
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return construir_respuesta_preflight_cors()
 }
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
-}
+/**
+ * Procesa el arreglo de registros de cinéticas recibido y persiste el resultado
+ * en Firestore (con fragmentación automática) y en `database_kinetics.json`.
+ *
+ * @param {Request} peticion_entrante - Objeto Request con los datos de cinéticas.
+ * @returns {Promise<NextResponse>} Respuesta JSON con el resumen de marcas y registros procesados.
+ */
+export async function POST(peticion_entrante: Request): Promise<NextResponse> {
+  const verificacion = verificar_autorizacion_sincronizacion(peticion_entrante)
+  if (!verificacion.autorizado && verificacion.respuesta_error) {
+    return verificacion.respuesta_error
+  }
 
-function procesarCineticas(rows: any[]) {
-    const groupedData: Record<string, any> = {}
-    const compuestos = ["Acetaldehido", "Diacetilo", "Acetato de etilo", "Propanol", "Isobutaol", "Isobutanol", "Acetato de isoamilo", "Isoamil alcohol", "Alcohol isoamilico", "Alcoholes Superiores", "Esteres", "Ésteres"]
-
-    rows.forEach(row => {
-        const getVal = (keys: string[]) => {
-            for (let k of Object.keys(row)) {
-                const kClean = k.toLowerCase().replace(/[\s\.]/g, '');
-                if (keys.some(key => kClean.includes(key.toLowerCase().replace(/[\s\.]/g, '')))) return row[k];
-            }
-            return undefined;
-        }
-
-        const fecha = getVal(["Fecha"]) || "N/A"; 
-        const cepa = getVal(["Marca", "cepa"]) || "N/A"; 
-        const etapa = getVal(["Etapa"]) || "FERMENTACION";
-        const vuelta = row["Dias"] !== undefined ? row["Dias"] : (row["Días"] !== undefined ? row["Días"] : row["Día"] !== undefined ? row["Día"] : undefined);
-        const propagacion = "N/A";
-        const tanque = getVal(["Tanque", "TCC", "Lote", "Item"]) || "N/A";
-        
-        if (vuelta === undefined || vuelta === null || vuelta === "") return;
-        
-        compuestos.forEach(volatil => {
-            const rowVal = getVal([volatil]);
-            const val = parseFloat(rowVal)
-            if (!isNaN(val)) {
-                let volatilLimpio = volatil.toUpperCase().includes("DIACETILO") ? "DIACETILO" : volatil.toUpperCase()
-                if (volatilLimpio.includes("ISOBUTA")) volatilLimpio = "ISOBUTANOL";
-                if (volatilLimpio.includes("ISOAMIL")) volatilLimpio = "ISOAMILICO";
-                if (volatilLimpio.includes("ESTERES") || volatilLimpio.includes("ÉSTERES")) volatilLimpio = "ESTERES";
-                if (volatilLimpio === "ACETATO DE ETILO" || volatilLimpio === "ETILO") volatilLimpio = "ETILO";
-                if (volatilLimpio.includes("ALCOHOLES SUPERIORES")) volatilLimpio = "ALCOHOLES";
-
-                const key = `${fecha}_${propagacion}_${cepa}_${tanque}_${volatilLimpio}_${etapa}`
-                if (!groupedData[key]) groupedData[key] = { fecha, propagacion, cepa, tanque, volatil: volatilLimpio, etapa, vueltas: {} }
-                groupedData[key].vueltas[vuelta.toString()] = val
-            }
-        })
-    })
-    return Object.values(groupedData)
-}
-
-export async function POST(request: Request) {
   try {
-    const rawData = await request.json()
+    const cuerpo_peticion = await peticion_entrante.json()
+    const registros_crudos = extraer_arreglo_desde_cuerpo(cuerpo_peticion)
 
-    if (!rawData || !Array.isArray(rawData)) {
-      return NextResponse.json({ error: "Datos invalidos" }, { status: 400, headers: corsHeaders })
+    if (!es_arreglo_registros_valido(registros_crudos)) {
+      return NextResponse.json(
+        { error: "Formato inválido: se requiere un arreglo no vacío de registros." },
+        { status: 400, headers: CABECERAS_CORS_API }
+      )
     }
 
-    const finalData = {
-      ultimaActualizacion: new Date().toISOString(),
-      rawData: rawData,
-      stats: procesarCineticas(rawData)
-    }
+    const { payload: paquete_cinetica, marcas_detectadas } =
+      procesar_lote_cinetica(registros_crudos)
+    const resultado_guardado = await guardar_documento_respaldado(
+      "kinetics_stats",
+      "database_kinetics.json",
+      paquete_cinetica
+    )
 
-    try {
-      const docRef = doc(firestoreDatabase, "dashboards", "kinetics_stats")
-      await setDoc(docRef, finalData)
-    } catch (firebaseError) {
-      console.error("Fallo al enviar a Firebase (Cinética):", firebaseError)
-    }
-
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(finalData, null, 2))
-    } catch (fsError) {
-      console.error("Fallo al guardar archivo local (Cinética):", fsError)
-    }
-
-    return NextResponse.json({ success: true, message: "Datos de cinética procesados" }, { headers: corsHeaders })
-  } catch (error) {
-    console.error("Error general en sync-kinetics:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500, headers: corsHeaders })
+    return NextResponse.json(
+      {
+        message: "Cinéticas y 4V procesadas con éxito",
+        totalRecords: registros_crudos.length,
+        marcasDetectadas: marcas_detectadas,
+        chunks: resultado_guardado.total_fragmentos
+      },
+      { status: 200, headers: CABECERAS_CORS_API }
+    )
+  } catch (error_general) {
+    console.error("Error procesando cinéticas:", error_general)
+    return NextResponse.json(
+      { error: "Error interno del servidor al procesar cinéticas" },
+      { status: 500, headers: CABECERAS_CORS_API }
+    )
   }
 }

@@ -1,25 +1,23 @@
+/**
+ * @fileoverview Página principal del sistema HMI de Cervecería (Análisis de Levadura y Cinéticas de Fermentación).
+ * Orquesta la navegación entre las 5 pestañas operativas y el botón de captura de pantalla.
+ */
+
 import { GitCompare, LineChart, Sprout, FlaskConical, BarChart3 } from "lucide-react"
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TopNav } from "@/components/dashboard/top-nav"
-import { PropagationTab } from "@/components/dashboard/propagation-tab"
-import { CineticaTab } from "@/components/dashboard/cinetica-tab"
-import { ComparacionTab } from "@/components/dashboard/comparacion-tab"
-import { Comparacion4vTab } from "@/components/dashboard/comparacion-4v-tab"
-// Importación corregida con el nuevo nombre del componente
-import { ValidacionAberTab } from "@/components/dashboard/validacion-aber-tab"
+import { TopNav } from "@/components/dashboard/top_nav"
+import { PropagationTab } from "@/components/dashboard/propagation_tab"
+import { CineticaTab } from "@/components/dashboard/cinetica_tab"
+import { ComparacionTab } from "@/components/dashboard/comparacion_tab"
+import { Comparacion4vTab } from "@/components/dashboard/comparacion_4v_tab"
+import { ValidacionAberTab } from "@/components/dashboard/validacion_aber_tab"
+import { CaptureButton } from "@/components/dashboard/capture_button"
 
-import { CaptureButton } from "@/components/dashboard/capture-button"
-
-function PlaceholderTab({ title }: { title: string }) {
-  return (
-    <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-yellow-600/30 bg-zinc-900 text-center">
-      <p className="text-sm font-medium text-zinc-300">{title}</p>
-      <p className="text-xs text-zinc-500">Módulo en desarrollo — datos no disponibles</p>
-    </div>
-  )
-}
-
+/**
+ * Renderiza el contenedor principal del tablero con sus 5 pestañas operativas.
+ *
+ * @returns {JSX.Element} Vista principal de la aplicación.
+ */
 export default function Page() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
@@ -45,7 +43,6 @@ export default function Page() {
                 <BarChart3 data-icon="inline-start" className="text-yellow-500" />
                 Comparación cinéticas
               </TabsTrigger>
-              {/* Nuevo TabsTrigger para Auditoría Abber */}
               <TabsTrigger value="validacion-aber" className="data-active:border-yellow-500/40">
                 <FlaskConical data-icon="inline-start" className="text-yellow-500" />
                 Auditoría Abber
@@ -66,7 +63,6 @@ export default function Page() {
           <TabsContent value="comparacion-4v" className="mt-3">
             <Comparacion4vTab />
           </TabsContent>
-          {/* Nuevo TabsContent para renderizar la pestaña */}
           <TabsContent value="validacion-aber" className="mt-3">
             <ValidacionAberTab />
           </TabsContent>
