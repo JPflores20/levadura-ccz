@@ -7,7 +7,7 @@
 import fs from "fs"
 import path from "path"
 
-const DIRECTORIOS_AUDITADOS = ["app", "components", "lib", "scripts"]
+const DIRECTORIOS_AUDITADOS = ["app", "components", "lib", "scripts", "tests"]
 const LIMITE_MAXIMO_LINEAS = 200
 
 /**

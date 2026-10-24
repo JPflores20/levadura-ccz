@@ -1,7 +1,6 @@
 /**
- * @fileoverview Servicio de persistencia híbrida (Firestore con fragmentación automática + JSON local).
- * Resuelve el límite de 1 MiB por documento de Cloud Firestore dividiendo `rawData` en fragmentos
- * de 500 registros y reconstruyéndolos de forma transparente al consultar.
+ * @fileoverview Servicio de persistencia híbrida (Firestore con caché en memoria, fragmentación automática y JSON local).
+ * Protege la cuota gratuita del Plan Spark mediante caché en RAM con invalidación inmediata al sincronizar.
  */
 
 import { base_datos_firestore } from "@/lib/firebase"
@@ -13,6 +12,16 @@ import path from "path"
  * Cantidad máxima de registros compactados por documento individual de Firestore para evitar superar 1 MiB.
  */
 export const TAMANO_FRAGMENTO_FIRESTORE = 900
+
+/**
+ * Tiempo de vida de la caché en memoria del servidor (10 minutos) para minimizar lecturas en el Plan Spark.
+ */
+const TIEMPO_VIDA_CACHE_MS = 10 * 60 * 1000
+
+const CACHE_MEMORIA_SERVIDOR = new Map<
+  string,
+  { expira_en: number; datos_almacenados: Record<string, any> }
+>()
 
 /**
  * Elimina propiedades vacías (`""`, `null`, `undefined`) de cada fila para reducir hasta un 80% el peso en Firestore.
@@ -39,34 +48,27 @@ export function compactar_registros_para_nube(
  *
  * @template T
  * @param {T[]} lista_registros - Arreglo completo de registros a particionar.
- * @param {number} [tamano_maximo=500] - Cantidad máxima de elementos por fragmento.
+ * @param {number} [tamano_maximo=900] - Cantidad máxima de elementos por fragmento.
  * @returns {T[][]} Lista de fragmentos generados.
  */
 export function dividir_arreglo_en_fragmentos<T>(
   lista_registros: T[],
   tamano_maximo: number = TAMANO_FRAGMENTO_FIRESTORE
 ): T[][] {
-  if (!Array.isArray(lista_registros) || lista_registros.length === 0) {
-    return [[]]
-  }
+  if (!Array.isArray(lista_registros) || lista_registros.length === 0) return [[]]
   const tamano_seguro = Math.max(1, tamano_maximo)
   const lista_fragmentos: T[][] = []
-  for (
-    let indice_inicio = 0;
-    indice_inicio < lista_registros.length;
-    indice_inicio += tamano_seguro
-  ) {
+  for (let indice_inicio = 0; indice_inicio < lista_registros.length; indice_inicio += tamano_seguro) {
     lista_fragmentos.push(lista_registros.slice(indice_inicio, indice_inicio + tamano_seguro))
   }
   return lista_fragmentos
 }
 
 /**
- * Guarda un paquete de datos en el archivo JSON local de respaldo y en Cloud Firestore,
- * aplicando particionamiento automático si `rawData` supera `TAMANO_FRAGMENTO_FIRESTORE`.
+ * Guarda un paquete de datos en caché de servidor, archivo JSON local y Cloud Firestore.
  *
- * @param {string} identificador_documento - ID del documento en la colección `dashboards` (ej. `kinetics_stats`).
- * @param {string} nombre_archivo_local - Nombre del archivo JSON en la raíz del proyecto (ej. `database_kinetics.json`).
+ * @param {string} identificador_documento - ID del documento en la colección `dashboards`.
+ * @param {string} nombre_archivo_local - Nombre del archivo JSON en la raíz del proyecto.
  * @param {Record<string, any>} paquete_completo - Objeto con metadatos, estadísticas y `rawData`.
  * @returns {Promise<{ guardado_local: boolean; guardado_firestore: boolean; total_fragmentos: number }>} Resultado de persistencia.
  */
@@ -81,15 +83,14 @@ export async function guardar_documento_respaldado(
   const registros_totales = Array.isArray(paquete_completo.rawData)
     ? compactar_registros_para_nube(paquete_completo.rawData)
     : []
-  const paquete_compactado = {
-    ...paquete_completo,
-    rawData: registros_totales
-  }
-  const fragmentos_registros = dividir_arreglo_en_fragmentos(
-    registros_totales,
-    TAMANO_FRAGMENTO_FIRESTORE
-  )
+  const paquete_compactado = { ...paquete_completo, rawData: registros_totales }
+  const fragmentos_registros = dividir_arreglo_en_fragmentos(registros_totales, TAMANO_FRAGMENTO_FIRESTORE)
   const total_fragmentos = fragmentos_registros.length
+
+  CACHE_MEMORIA_SERVIDOR.set(identificador_documento, {
+    expira_en: Date.now() + TIEMPO_VIDA_CACHE_MS,
+    datos_almacenados: paquete_compactado
+  })
 
   const ruta_archivo_local = path.join(/*turbopackIgnore: true*/ process.cwd(), nombre_archivo_local)
   try {
@@ -108,16 +109,14 @@ export async function guardar_documento_respaldado(
     await setDoc(doc(base_datos_firestore, "dashboards", identificador_documento), documento_raiz)
 
     if (total_fragmentos > 1) {
-      const promesas_fragmentos = fragmentos_registros
-        .slice(1)
-        .map((registros_fragmento, indice_secundario) => {
-          const id_fragmento = `${identificador_documento}_chunk_${indice_secundario + 1}`
-          return setDoc(doc(base_datos_firestore, "dashboards", id_fragmento), {
-            chunkIndex: indice_secundario + 1,
-            updatedAt: new Date().toISOString(),
-            rawData: registros_fragmento
-          })
+      const promesas_fragmentos = fragmentos_registros.slice(1).map((registros_fragmento, indice_secundario) => {
+        const id_fragmento = `${identificador_documento}_chunk_${indice_secundario + 1}`
+        return setDoc(doc(base_datos_firestore, "dashboards", id_fragmento), {
+          chunkIndex: indice_secundario + 1,
+          updatedAt: new Date().toISOString(),
+          rawData: registros_fragmento
         })
+      })
       await Promise.all(promesas_fragmentos)
     }
     guardado_firestore = true
@@ -129,8 +128,7 @@ export async function guardar_documento_respaldado(
 }
 
 /**
- * Lee un documento desde Cloud Firestore reensamblando todos sus fragmentos `rawData` si existen,
- * o recurre al archivo JSON local de respaldo en caso de desconexión.
+ * Lee un documento priorizando la caché en memoria del servidor para ahorrar lecturas de Firestore (Plan Spark).
  *
  * @param {string} identificador_documento - ID del documento en la colección `dashboards`.
  * @param {string} nombre_archivo_local - Nombre del archivo JSON local de respaldo.
@@ -140,56 +138,49 @@ export async function leer_documento_respaldado(
   identificador_documento: string,
   nombre_archivo_local: string
 ): Promise<Record<string, any> | null> {
-  try {
-    const referencia_principal = doc(base_datos_firestore, "dashboards", identificador_documento)
-    const instantanea_principal = await getDoc(referencia_principal)
+  const entrada_cache = CACHE_MEMORIA_SERVIDOR.get(identificador_documento)
+  if (entrada_cache && entrada_cache.expira_en > Date.now()) {
+    return entrada_cache.datos_almacenados
+  }
 
+  try {
+    const instantanea_principal = await getDoc(doc(base_datos_firestore, "dashboards", identificador_documento))
     if (instantanea_principal.exists()) {
       const datos_principales = instantanea_principal.data()
       const cantidad_fragmentos = Number(datos_principales.totalChunks || 1)
-      let registros_acumulados: any[] = Array.isArray(datos_principales.rawData)
-        ? [...datos_principales.rawData]
-        : []
+      let registros_acumulados: any[] = Array.isArray(datos_principales.rawData) ? [...datos_principales.rawData] : []
 
       if (cantidad_fragmentos > 1) {
-        const promesas_lectura = Array.from(
-          { length: cantidad_fragmentos - 1 },
-          (_, indice_extra) =>
-            getDoc(
-              doc(
-                base_datos_firestore,
-                "dashboards",
-                `${identificador_documento}_chunk_${indice_extra + 1}`
-              )
-            )
+        const promesas_lectura = Array.from({ length: cantidad_fragmentos - 1 }, (_, indice_extra) =>
+          getDoc(doc(base_datos_firestore, "dashboards", `${identificador_documento}_chunk_${indice_extra + 1}`))
         )
         const instantaneas_secundarias = await Promise.all(promesas_lectura)
         for (const instantanea_chunk of instantaneas_secundarias) {
-          if (instantanea_chunk.exists()) {
-            const datos_chunk = instantanea_chunk.data()
-            if (Array.isArray(datos_chunk.rawData)) {
-              registros_acumulados = registros_acumulados.concat(datos_chunk.rawData)
-            }
+          if (instantanea_chunk.exists() && Array.isArray(instantanea_chunk.data().rawData)) {
+            registros_acumulados = registros_acumulados.concat(instantanea_chunk.data().rawData)
           }
         }
       }
 
-      return {
-        ...datos_principales,
-        rawData: registros_acumulados
-      }
+      const resultado_reconstruido = { ...datos_principales, rawData: registros_acumulados }
+      CACHE_MEMORIA_SERVIDOR.set(identificador_documento, {
+        expira_en: Date.now() + TIEMPO_VIDA_CACHE_MS,
+        datos_almacenados: resultado_reconstruido
+      })
+      return resultado_reconstruido
     }
   } catch (error_firebase) {
-    console.warn(
-      `No se pudo leer ${identificador_documento} desde Firestore, usando respaldo local:`,
-      error_firebase
-    )
+    console.warn(`No se pudo leer ${identificador_documento} desde Firestore, usando respaldo local:`, error_firebase)
   }
 
   const ruta_archivo_local = path.join(/*turbopackIgnore: true*/ process.cwd(), nombre_archivo_local)
   if (fs.existsSync(ruta_archivo_local)) {
-    const contenido_texto = fs.readFileSync(ruta_archivo_local, "utf-8")
-    return JSON.parse(contenido_texto)
+    const datos_locales = JSON.parse(fs.readFileSync(ruta_archivo_local, "utf-8"))
+    CACHE_MEMORIA_SERVIDOR.set(identificador_documento, {
+      expira_en: Date.now() + TIEMPO_VIDA_CACHE_MS,
+      datos_almacenados: datos_locales
+    })
+    return datos_locales
   }
 
   return null

@@ -17,8 +17,8 @@ El proyecto sigue una arquitectura limpia desacoplada en **5 capas principales**
    - Contratos de dominio tipados (`contratos_dominio.ts`) y motores matemáticos reutilizables para estadística descriptiva, índices de capacidad del proceso ($Cp, Cpk, Pp, Ppk$), regresión lineal por mínimos cuadrados ($R^2$), normalización de fechas seriales de Excel y formatos numéricos.
 4. **Capa de API y Persistencia Fragmentada (`app/api/`, `lib/firebase.ts`, `servicio_almacenamiento_json.ts`)**:
    - Endpoints REST (`GET`/`POST`/`OPTIONS`) protegidos opcionalmente por `SYNC_API_SECRET` (`x-api-key` / `Bearer`), que dividen automáticamente lotes mayores a 500 registros en fragmentos de Firestore (`dashboards/{id}_chunk_{n}`) para superar el límite de 1 MiB por documento y mantienen respaldos JSON locales (`database.json`, `database_kinetics.json`, `database_aber.json`).
-5. **Capa de Auditoría y Pruebas Automatizadas (`scripts/`)**:
-   - Guardia automatizada (`auditar_reglas_arquitectura.mjs`) que verifica las 6 reglas inquebrantables de refactorización y suite de pruebas unitarias (`ejecutar_pruebas_dominio.mjs`).
+5. **Capa de Auditoría y Pruebas Automatizadas (`scripts/` y `tests/`)**:
+   - Guardia automatizada (`auditar_reglas_arquitectura.mjs`) que verifica las 6 reglas inquebrantables de refactorización y suite modular de **129 pruebas unitarias y de integración** en `tests/`.
 
 ---
 
@@ -119,7 +119,15 @@ levadura-ccz/
 │   └── utils.ts                             # Conversión numérica segura y normalización de fechas Excel
 ├── scripts/
 │   ├── auditar_reglas_arquitectura.mjs      # Verificador automatizado de las 6 reglas de refactorización
-│   └── ejecutar_pruebas_dominio.mjs         # Suite de pruebas unitarias de estadística y servicios
+│   └── ejecutar_pruebas_dominio.mjs         # Suite base de pruebas rápidas de dominio
+├── tests/
+│   ├── comparacion_aber_almacenamiento.test.mjs # Pruebas de comparación, Abber, calendario, contratos y fragmentos
+│   ├── configuracion_pruebas.mjs            # Hook de resolución del alias @/ para Node Test Runner
+│   ├── estadisticas_descriptivas.test.mjs   # Pruebas de media, mediana, desviación estándar y Cp/Cpk/Pp/Ppk
+│   ├── estadisticas_graficas.test.mjs       # Pruebas de histogramas, curva normal, rangos y regresión R²
+│   ├── sincronizacion_cinetica_4v.test.mjs  # Pruebas de cinéticas de fermentación y compuestos volátiles 4V
+│   ├── sincronizacion_propagacion.test.mjs  # Pruebas de sincronización, filtros, KPIs y capacidad de propagación
+│   └── utilidades_normalizacion.test.mjs    # Pruebas de normalización de filas, fechas seriales Excel y CSS
 ├── database.json                            # Respaldo local sincronizado de Propagación
 ├── database_kinetics.json                   # Respaldo local sincronizado de Cinética
 └── database_aber.json                       # Respaldo local sincronizado de Validación Aber

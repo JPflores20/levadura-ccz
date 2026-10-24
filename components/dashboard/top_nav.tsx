@@ -47,7 +47,12 @@ export function TopNav() {
             }
             if (instantanea_actual.exists()) {
               establecer_hora_ultima_sincronizacion(new Date().toLocaleTimeString())
-              revalidar_cache_swr(ruta_swr)
+              const datos_instantanea = instantanea_actual.data()
+              if (Number(datos_instantanea.totalChunks || 1) <= 1 && Array.isArray(datos_instantanea.rawData)) {
+                revalidar_cache_swr(ruta_swr, datos_instantanea, { revalidate: false })
+              } else {
+                revalidar_cache_swr(ruta_swr)
+              }
             }
           },
           () => {
