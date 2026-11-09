@@ -102,7 +102,9 @@ export function CustomDropdownSelect({
         : [...valores_multiples, valor_opcion]
       al_cambiar_multiple(nueva_lista)
     } else if (al_cambiar_unico) {
-      al_cambiar_unico(valor_opcion)
+      const tiene_opcion_vacia = opciones_normalizadas.some((opcion) => opcion.valor === "")
+      const nuevo_valor = valor_unico === valor_opcion && tiene_opcion_vacia ? "" : valor_opcion
+      al_cambiar_unico(nuevo_valor)
       establecer_esta_abierto(false)
     }
   }

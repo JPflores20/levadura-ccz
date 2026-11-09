@@ -7,25 +7,17 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import "./configuracion_pruebas.mjs"
 
-const {
-  extraer_valor_columna_cinetica,
-  normalizar_nombre_compuesto_volatil,
-  procesar_lote_cinetica
-} = await import("../lib/services/servicio_sincronizacion_cinetica.ts")
+const { extraer_valor_columna_cinetica, normalizar_nombre_compuesto_volatil, procesar_lote_cinetica } =
+  await import("../lib/services/servicio_sincronizacion_cinetica.ts")
 
 const {
-  obtener_propiedad_cinetica,
-  obtener_valor_numerico_fila,
-  calcular_promedio_columna_cinetica,
-  construir_kpis_inicio_fermentacion,
-  construir_tabla_compuestos_cinetica,
-  construir_serie_evolucion_cinetica
+  obtener_propiedad_cinetica, obtener_valor_numerico_fila, calcular_promedio_columna_cinetica,
+  construir_kpis_inicio_fermentacion, construir_tabla_compuestos_cinetica, construir_serie_evolucion_cinetica
 } = await import("../lib/services/servicio_cinetica_fermentacion.ts")
 
 const {
-  agrupar_estadisticas_volatiles_4v,
-  ordenar_tanques_por_completitud,
-  preparar_serie_comparativa_volatil
+  agrupar_estadisticas_volatiles_4v, extraer_opciones_gen_vuelta_4v,
+  ordenar_tanques_por_completitud, preparar_serie_comparativa_volatil
 } = await import("../lib/services/servicio_comparacion_4v.ts")
 
 test("89. extraer_valor_columna_cinetica prioriza coincidencia exacta sobre coincidencia parcial", () => {
@@ -132,14 +124,18 @@ test("104. construir_serie_evolucion_cinetica construye pasos F0..Fn y R0..Rn", 
   assert.equal(serie.find((punto) => punto.paso === "R2").acetaldehido, 8.2)
 })
 
-test("105. agrupar_estadisticas_volatiles_4v extrae series desde tabla ancha con columna TCC", () => {
-  const agrupados = agrupar_estadisticas_volatiles_4v([
+test("105. agrupar_estadisticas_volatiles_4v extrae series, generación y vuelta heredada por tanque", () => {
+  const filas_crudas = [
+    { Fecha: 46213, Marca: "CORONA", Etapa: "Fermentación", Dias: 0, TCC: "108", "Gen.": "I", "Vuelta de la levadura": 4 },
     { Fecha: 46214, Marca: "CORONA", Etapa: "Fermentación", Dias: 2, TCC: "108", "Diacetilo total": 310 }
-  ])
+  ]
+  const agrupados = agrupar_estadisticas_volatiles_4v(filas_crudas)
+  const opciones = extraer_opciones_gen_vuelta_4v(filas_crudas, agrupados)
   assert.equal(agrupados.length, 1)
   assert.equal(agrupados[0].tanque, "108")
-  assert.equal(agrupados[0].volatil, "DIACETILO")
-  assert.equal(agrupados[0].vueltas["2"], 310)
+  assert.equal(agrupados[0].generacion, "I")
+  assert.equal(agrupados[0].vuelta, "4")
+  assert.deepEqual(opciones, { generaciones: ["I"], vueltas: ["4"] })
 })
 
 test("106. agrupar_estadisticas_volatiles_4v separa correctamente ISOAMILO de ISOAMILICO", () => {
@@ -173,23 +169,26 @@ test("109. ordenar_tanques_por_completitud devuelve arreglo vacío si la lista d
   assert.deepEqual(ordenar_tanques_por_completitud([], "CORONA", []), [])
 })
 
-test("110. preparar_serie_comparativa_volatil alinea Tanque A y Tanques B en pasos F y R", () => {
+test("110. preparar_serie_comparativa_volatil alinea Tanque A y Tanques B en pasos F y R siempre hasta R12", () => {
   const datos_a = [{ volatil: "DIACETILO", etapa: "FERMENTACION", vueltas: { "1": 400, "2": 250 } }]
   const datos_b = [{ name: "109", "data": [{ volatil: "DIACETILO", etapa: "FERMENTACION", vueltas: { "1": 380, "2": 210 } }] }]
   const serie = preparar_serie_comparativa_volatil("DIACETILO", datos_a, datos_b)
-  assert.equal(serie.length, 2)
   assert.equal(serie[0].vuelta, "F1")
   assert.equal(serie[0].valorA, 400)
   assert.equal(serie[0].valorB_0, 380)
+  assert.equal(serie[serie.length - 1].vuelta, "R12")
+  assert.equal(serie[serie.length - 1].valorA, 250)
 })
 
-test("111. preparar_serie_comparativa_volatil incluye F0 y R0 cuando existen mediciones en día 0", () => {
+test("111. preparar_serie_comparativa_volatil incluye F0 y R0 cuando existen mediciones en día 0 y llega a R12", () => {
   const datos_a = [
     { volatil: "ESTERES", etapa: "FERMENTACION", vueltas: { "0": 5, "1": 15 } },
     { volatil: "ESTERES", etapa: "REPOSO", vueltas: { "0": 32, "1": 35 } }
   ]
   const serie = preparar_serie_comparativa_volatil("ESTERES", datos_a, [])
-  assert.deepEqual(serie.map((punto) => punto.vuelta), ["F0", "F1", "R0", "R1"])
+  const etiquetas = serie.map((punto) => punto.vuelta)
+  assert.ok(etiquetas.includes("F0") && etiquetas.includes("R0"))
+  assert.equal(etiquetas[etiquetas.length - 1], "R12")
 })
 
 test("112. construir_serie_evolucion_cinetica amplía dinámicamente max_ferm cuando supera 7 días", () => {

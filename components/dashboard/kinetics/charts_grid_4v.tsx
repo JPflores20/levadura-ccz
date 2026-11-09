@@ -72,7 +72,7 @@ export function ChartsGrid4v({
     <ResponsiveContainer width="100%" height={350}>
       <LineChart data={datos_serie} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-        <XAxis dataKey="vuelta" {...propiedades_ejes} label={etiqueta_eje_x} />
+        <XAxis dataKey="vuelta" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
         <YAxis {...propiedades_ejes} />
         <Tooltip contentStyle={estilo_tooltip.contentStyle} formatter={formatear_valor_numerico} />
         <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
@@ -90,7 +90,7 @@ export function ChartsGrid4v({
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={datos_diacetilo_acetaldehido} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="vuelta" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="vuelta" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} label={{ value: "Diacetilo (ppm)", angle: -90, position: "insideLeft", fill: "#888", dy: 40, dx: -10 }} />
             <YAxis yAxisId="right" orientation="right" {...propiedades_ejes} label={{ value: "Acetaldehído (ppm)", angle: 90, position: "insideRight", fill: "#888", dy: 40, dx: 10 }} />
             <Tooltip contentStyle={estilo_tooltip.contentStyle} formatter={formatear_valor_numerico} />
@@ -111,7 +111,7 @@ export function ChartsGrid4v({
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={datos_esteres_alcoholes} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="vuelta" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="vuelta" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} label={{ value: "Ésteres (ppm)", angle: -90, position: "insideLeft", fill: "#888", dy: 40, dx: -10 }} />
             <YAxis yAxisId="right" orientation="right" {...propiedades_ejes} label={{ value: "Alcoholes (ppm)", angle: 90, position: "insideRight", fill: "#888", dy: 40, dx: 10 }} />
             <Tooltip contentStyle={estilo_tooltip.contentStyle} formatter={formatear_valor_numerico} />

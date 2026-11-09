@@ -147,20 +147,21 @@ export function construir_tabla_compuestos_cinetica(filas_filtradas: any[]) {
  * @returns Arreglo de puntos por paso de proceso con promedios de cada compuesto.
  */
 export function construir_serie_evolucion_cinetica(filas_filtradas: any[]) {
-  let max_ferm = 7
-  let max_rep = 7
+  let max_ferm = 7, max_dia_rep_datos = -1
+  const max_rep = 12
   filas_filtradas.forEach((fila) => {
     const etapa = obtener_propiedad_cinetica(fila, ["Etapa"])?.toString().trim().toUpperCase() || ""
     const num_dia = parseInt(obtener_propiedad_cinetica(fila, ["Dias", "Días"])?.toString().trim() || "", 10)
     if (!isNaN(num_dia) && num_dia >= 0 && num_dia <= 30) {
       if (etapa.includes("FERM") && num_dia > max_ferm) max_ferm = num_dia
-      if (etapa.includes("REP") && num_dia > max_rep) max_rep = num_dia
+      if (etapa.includes("REP") && num_dia > max_dia_rep_datos) max_dia_rep_datos = num_dia
     }
   })
 
   const pasos_proceso: string[] = []
   for (let dia_f = 0; dia_f <= max_ferm; dia_f++) pasos_proceso.push(`F${dia_f}`)
   for (let dia_r = 0; dia_r <= max_rep; dia_r++) pasos_proceso.push(`R${dia_r}`)
+  const ultimos_valores: Record<string, number | null> = {}
 
   return pasos_proceso.map((etiqueta_paso) => {
     const filas_del_paso = filas_filtradas.filter((fila) => {
@@ -172,9 +173,14 @@ export function construir_serie_evolucion_cinetica(filas_filtradas: any[]) {
     })
 
     const promediar = (claves: string[]) => {
-      if (filas_del_paso.length === 0) return null
+      const clave_id = claves[0]
       const valores_paso = filas_del_paso.map((fila) => obtener_valor_numerico_fila(fila, claves)).filter((valor_medido) => valor_medido > 0 && !isNaN(valor_medido))
-      return valores_paso.length ? parseFloat((valores_paso.reduce((acumulador, valor_actual) => acumulador + valor_actual, 0) / valores_paso.length).toFixed(2)) : null
+      if (valores_paso.length > 0) {
+        ultimos_valores[clave_id] = parseFloat((valores_paso.reduce((acumulador, valor_actual) => acumulador + valor_actual, 0) / valores_paso.length).toFixed(2))
+        return ultimos_valores[clave_id]
+      }
+      const es_post_rep = etiqueta_paso.startsWith("R") && Number(etiqueta_paso.slice(1)) > max_dia_rep_datos
+      return es_post_rep && ultimos_valores[clave_id] != null ? ultimos_valores[clave_id] : null
     }
 
     return {

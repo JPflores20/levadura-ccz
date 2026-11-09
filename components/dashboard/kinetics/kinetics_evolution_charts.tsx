@@ -74,7 +74,7 @@ export function KineticsEvolutionCharts({
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={datos_grafica_evolucion} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="paso" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="paso" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} orientation="left" stroke={COLORES_GRAFICAS.blue} />
             <YAxis yAxisId="right" {...propiedades_ejes} orientation="right" stroke={COLORES_GRAFICAS.yellow} />
             <Tooltip content={<TooltipEvolucionCinetica />} />
@@ -91,7 +91,7 @@ export function KineticsEvolutionCharts({
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={datos_grafica_evolucion} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="paso" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="paso" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} orientation="left" stroke="#10b981" />
             <YAxis yAxisId="right" {...propiedades_ejes} orientation="right" stroke={COLORES_GRAFICAS.yellow} />
             <Tooltip content={<TooltipEvolucionCinetica />} />
@@ -108,7 +108,7 @@ export function KineticsEvolutionCharts({
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={datos_grafica_evolucion} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="paso" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="paso" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} orientation="left" stroke="#ec4899" />
             <YAxis yAxisId="right" {...propiedades_ejes} orientation="right" stroke="#f97316" />
             <Tooltip content={<TooltipEvolucionCinetica />} />
@@ -125,7 +125,7 @@ export function KineticsEvolutionCharts({
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={datos_grafica_evolucion} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORES_GRAFICAS.grid} vertical={false} />
-            <XAxis dataKey="paso" {...propiedades_ejes} label={etiqueta_eje_x} />
+            <XAxis dataKey="paso" interval={0} {...propiedades_ejes} label={etiqueta_eje_x} />
             <YAxis yAxisId="left" {...propiedades_ejes} orientation="left" stroke="#06b6d4" />
             <YAxis yAxisId="right" {...propiedades_ejes} orientation="right" stroke="#f43f5e" />
             <Tooltip content={<TooltipEvolucionCinetica />} />
