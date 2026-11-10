@@ -45,96 +45,39 @@ export function extraer_registros_excel_propagacion(filas_excel: any[][]): Recor
   let indice_fila_cabecera = -1
   for (let indice_busqueda = 0; indice_busqueda < Math.min(10, filas_excel.length); indice_busqueda++) {
     const fila_candidata = filas_excel[indice_busqueda]
-    if (
-      fila_candidata &&
-      fila_candidata.some(
-        (celda_actual: any) => celda_actual && celda_actual.toString().toLowerCase().includes("viabilidad")
-      )
-    ) {
+    if (fila_candidata?.some((celda_actual: any) => celda_actual?.toString().toLowerCase().includes("viabilidad"))) {
       indice_fila_cabecera = indice_busqueda
       break
     }
   }
-
   if (indice_fila_cabecera === -1) return null
 
   const cabeceras_hoja = filas_excel[indice_fila_cabecera]
   const filas_datos = filas_excel.slice(indice_fila_cabecera + 1)
+  const buscar = (predicado: (texto: string) => boolean) => buscar_indice_columna_excel(filas_excel, cabeceras_hoja, predicado)
 
+  const idx_anio = buscar((texto) => texto.toLowerCase() === "año" || texto.toLowerCase() === "anio")
   const idx_plato = cabeceras_hoja.findIndex((cab: string) => cab && cab.toString().trim() === "°P")
   const idx_ph = cabeceras_hoja.findIndex((cab: string) => cab && cab.toString().trim() === "pH.")
-  const idx_conteo = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("conteo de celulas") || texto.toLowerCase() === "conteo"
-  )
-  const idx_viab = buscar_indice_columna_excel(filas_excel, cabeceras_hoja, (texto) =>
-    texto.toLowerCase().includes("viabilidad")
-  )
-  const idx_fecha = buscar_indice_columna_excel(filas_excel, cabeceras_hoja, (texto) =>
-    texto.toLowerCase().includes("fecha")
-  )
-  const idx_hora = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("hora inicio") || texto.toLowerCase() === "hora"
-  )
-  const idx_tipo_lev = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("tipo de lev") || texto.toLowerCase() === "cepa" || texto.toLowerCase() === "marca"
-  )
-  const idx_tanque = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().trim() === "tanque" || texto.toLowerCase().trim() === "tcc"
-  )
-  const idx_gen = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("gen.") || texto.toLowerCase() === "gen" || texto.toLowerCase().includes("generaci")
-  )
-  const idx_vuelta = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("vuelta") || texto.toLowerCase() === "vta" || texto.toLowerCase() === "vta."
-  )
-  const idx_codigo = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("codigo") || texto.toLowerCase().includes("código")
-  )
-  let idx_dobleteo = buscar_indice_columna_excel(filas_excel, cabeceras_hoja, (texto) =>
-    texto.toLowerCase().includes("doblete")
-  )
+  const idx_conteo = buscar((texto) => texto.toLowerCase().includes("conteo de celulas") || texto.toLowerCase() === "conteo")
+  const idx_viab = buscar((texto) => texto.toLowerCase().includes("viabilidad"))
+  const idx_fecha = buscar((texto) => texto.toLowerCase().includes("fecha"))
+  const idx_hora = buscar((texto) => texto.toLowerCase().includes("hora inicio") || texto.toLowerCase() === "hora")
+  const idx_tiempo_op = buscar((texto) => texto.toLowerCase().includes("tiempo de oper") || texto.toLowerCase().includes("atemper"))
+  const idx_tipo_lev = buscar((texto) => texto.toLowerCase().includes("tipo de lev") || texto.toLowerCase() === "cepa" || texto.toLowerCase() === "marca")
+  const idx_tanque = buscar((texto) => texto.toLowerCase().trim() === "tanque" || texto.toLowerCase().trim() === "tcc")
+  const idx_gen = buscar((texto) => texto.toLowerCase().includes("gen.") || texto.toLowerCase() === "gen" || texto.toLowerCase().includes("generaci"))
+  const idx_vuelta = buscar((texto) => texto.toLowerCase().includes("vuelta") || texto.toLowerCase() === "vta" || texto.toLowerCase() === "vta.")
+  const idx_codigo = buscar((texto) => texto.toLowerCase().includes("codigo") || texto.toLowerCase().includes("código"))
+  let idx_dobleteo = buscar((texto) => texto.toLowerCase().includes("doblete"))
   if (idx_dobleteo === -1) idx_dobleteo = 19
 
-  const idx_solidos = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("% de solidos") || texto.toLowerCase().includes("% de sólidos")
-  )
-  const idx_temp = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("temp del mosto") || texto.toLowerCase().includes("temp. en tanque") || texto.toLowerCase().includes("temperatura")
-  )
-  const idx_vigor = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => (texto.toLowerCase().includes("vigor") || texto.toLowerCase().includes("vigososas")) && !texto.toLowerCase().includes("muy")
-  )
-  const idx_muy_vigor = buscar_indice_columna_excel(filas_excel, cabeceras_hoja, (texto) =>
-    texto.toLowerCase().includes("muy vig")
-  )
-  const idx_debiles = buscar_indice_columna_excel(
-    filas_excel,
-    cabeceras_hoja,
-    (texto) => texto.toLowerCase().includes("debiles") || texto.toLowerCase().includes("débiles")
-  )
-  const idx_muertas = buscar_indice_columna_excel(filas_excel, cabeceras_hoja, (texto) =>
-    texto.toLowerCase().includes("muertas")
-  )
+  const idx_solidos = buscar((texto) => texto.toLowerCase().includes("% de solidos") || texto.toLowerCase().includes("% de sólidos"))
+  const idx_temp = buscar((texto) => texto.toLowerCase().includes("temp del mosto") || texto.toLowerCase().includes("temp. en tanque") || texto.toLowerCase().includes("temperatura"))
+  const idx_vigor = buscar((texto) => (texto.toLowerCase().includes("vigor") || texto.toLowerCase().includes("vigososas")) && !texto.toLowerCase().includes("muy"))
+  const idx_muy_vigor = buscar((texto) => texto.toLowerCase().includes("muy vig"))
+  const idx_debiles = buscar((texto) => texto.toLowerCase().includes("debiles") || texto.toLowerCase().includes("débiles"))
+  const idx_muertas = buscar((texto) => texto.toLowerCase().includes("muertas"))
 
   const registros_extraidos: Record<string, any>[] = []
 
@@ -145,30 +88,35 @@ export function extraer_registros_excel_propagacion(filas_excel: any[][]): Recor
     const valor_ph = Number(fila_actual[idx_ph]) || 0
     const valor_conteo = Number(fila_actual[idx_conteo]) || 0
     const valor_temp = idx_temp >= 0 ? Number(fila_actual[idx_temp]) || 0 : 0
-    const texto_fecha = idx_fecha >= 0 ? formatear_fecha_excel(fila_actual[idx_fecha]) : "N/A"
-    const tiene_metricas_validas =
-      valor_viabilidad > 0 || valor_conteo > 0 || valor_plato > 0 || valor_ph > 0 || valor_temp > 0
+    const anio_celda = idx_anio >= 0 && fila_actual[idx_anio] ? String(fila_actual[idx_anio]).trim() : ""
+    const texto_fecha = idx_fecha >= 0 ? formatear_fecha_excel(fila_actual[idx_fecha], anio_celda) : "N/A"
+    const tiene_metricas = valor_viabilidad > 0 || valor_conteo > 0 || valor_plato > 0 || valor_ph > 0 || valor_temp > 0
 
-    if (texto_fecha !== "N/A" && tiene_metricas_validas) {
+    if (texto_fecha !== "N/A" && tiene_metricas) {
       const valor_vigorosas = idx_vigor >= 0 ? Number(fila_actual[idx_vigor]) || 0 : 0
       const valor_muy_vigorosas = idx_muy_vigor >= 0 ? Number(fila_actual[idx_muy_vigor]) || 0 : 0
       let texto_hora = idx_hora >= 0 ? fila_actual[idx_hora]?.toString() : "N/A"
       if (texto_hora !== "N/A" && !isNaN(Number(texto_hora))) {
         const minutos_totales = Math.round(Number(texto_hora) * 24 * 60)
-        const horas_str = Math.floor(minutos_totales / 60).toString().padStart(2, "0")
-        const minutos_str = (minutos_totales % 60).toString().padStart(2, "0")
-        texto_hora = `${horas_str}:${minutos_str}`
+        texto_hora = `${Math.floor(minutos_totales / 60).toString().padStart(2, "0")}:${(minutos_totales % 60).toString().padStart(2, "0")}`
       }
+      const codigo_cultivo = idx_codigo >= 0 && fila_actual[idx_codigo] !== undefined ? fila_actual[idx_codigo].toString().trim().toUpperCase() : "N/A"
+      const anio_resuelto = anio_celda || texto_fecha.match(/\b(20\d{2})\b/)?.[1] || String(new Date().getFullYear())
+      const gen_fila = codigo_cultivo && codigo_cultivo !== "N/A" && codigo_cultivo !== "S/C"
+        ? `${codigo_cultivo}-${anio_resuelto}`
+        : (idx_gen >= 0 && fila_actual[idx_gen] !== undefined && fila_actual[idx_gen] !== "" ? fila_actual[idx_gen].toString().trim() : "N/A")
 
       registros_extraidos.push({
+        Año: anio_resuelto,
         fecha: texto_fecha,
         hora: texto_hora,
+        "Tiempo de Operación": idx_tiempo_op >= 0 ? fila_actual[idx_tiempo_op] : 0,
         tipoLev: idx_tipo_lev >= 0 && fila_actual[idx_tipo_lev] ? fila_actual[idx_tipo_lev].toString().trim() : "General",
         tanque: idx_tanque >= 0 && fila_actual[idx_tanque] ? fila_actual[idx_tanque].toString().trim() : "N/A",
         dobleteo: idx_dobleteo >= 0 && fila_actual[idx_dobleteo] ? fila_actual[idx_dobleteo].toString().trim() : "N/A",
-        generacion: idx_gen >= 0 && fila_actual[idx_gen] !== undefined && fila_actual[idx_gen] !== "" ? fila_actual[idx_gen].toString().trim() : "N/A",
+        generacion: gen_fila,
         vuelta: idx_vuelta >= 0 && fila_actual[idx_vuelta] !== undefined && fila_actual[idx_vuelta] !== "" ? fila_actual[idx_vuelta].toString().trim() : "1",
-        codigoCultivo: idx_codigo >= 0 && fila_actual[idx_codigo] !== undefined ? fila_actual[idx_codigo].toString().trim() : "N/A",
+        codigoCultivo: codigo_cultivo,
         plato: valor_plato,
         ph: valor_ph,
         conteo: valor_conteo,

@@ -1,13 +1,10 @@
 /**
- * @fileoverview Servicio de dominio para extracción de propiedades, cálculo de KPIs de inicio
- * de fermentación, tabla de compuestos y evolución cinética (F0..Fn y R0..Rn).
+ * @fileoverview Servicio de dominio para extracción de propiedades, cálculo de KPIs de arranque
+ * de fermentación, tabla resumen de cinética (F1, F3, F6, R6/R8, Valor Final) y evolución (F0..F6 y R1..R12).
  */
 
 /**
  * Busca el valor de una propiedad en un objeto priorizando coincidencia exacta y descartando vacíos.
- * @param objeto_registro - Fila de datos de cinética.
- * @param llaves_candidatas - Lista de nombres de columna posibles.
- * @returns El valor encontrado o null si no existe.
  */
 export function obtener_propiedad_cinetica(objeto_registro: any, llaves_candidatas: string[]): any {
   if (!objeto_registro) return null
@@ -24,10 +21,7 @@ export function obtener_propiedad_cinetica(objeto_registro: any, llaves_candidat
   for (const llave_buscada of llaves_candidatas) {
     const clave_limpia = llave_buscada.toLowerCase().replace(/[\s\.]/g, "")
     const llave_parcial = llaves_objeto.find(
-      (llave) =>
-        llave.toLowerCase().replace(/[\s\.]/g, "").includes(clave_limpia) &&
-        objeto_registro[llave] !== "" &&
-        objeto_registro[llave] != null
+      (llave) => llave.toLowerCase().replace(/[\s\.]/g, "").includes(clave_limpia) && objeto_registro[llave] !== "" && objeto_registro[llave] != null
     )
     if (llave_parcial) return objeto_registro[llave_parcial]
   }
@@ -36,25 +30,15 @@ export function obtener_propiedad_cinetica(objeto_registro: any, llaves_candidat
 
 /**
  * Extrae un valor numérico desde una fila de cinética buscando palabras clave y aplicando exclusiones.
- * @param fila_registro - Objeto de fila individual.
- * @param palabras_clave - Palabras clave para localizar la columna.
- * @param palabras_excluidas - Subcadenas que invalidan la coincidencia de columna.
- * @returns Valor numérico encontrado o 0 si no existe.
  */
-export function obtener_valor_numerico_fila(
-  fila_registro: any,
-  palabras_clave: string[],
-  palabras_excluidas?: string[]
-): number {
+export function obtener_valor_numerico_fila(fila_registro: any, palabras_clave: string[], palabras_excluidas?: string[]): number {
   if (!fila_registro) return 0
   for (const palabra_clave of palabras_clave) {
     const clave_limpia = palabra_clave.toLowerCase().replace(/\s+/g, "")
     const llave_encontrada = Object.keys(fila_registro).find((llave_actual) => {
       const llave_normalizada = llave_actual.toLowerCase().replace(/\s+/g, "")
       if (!llave_normalizada.includes(clave_limpia)) return false
-      if (palabras_excluidas?.some((excl) => llave_normalizada.includes(excl.toLowerCase().replace(/\s+/g, "")))) {
-        return false
-      }
+      if (palabras_excluidas?.some((excl) => llave_normalizada.includes(excl.toLowerCase().replace(/\s+/g, "")))) return false
       return fila_registro[llave_actual] !== undefined && fila_registro[llave_actual] !== "" && fila_registro[llave_actual] !== null
     })
     if (llave_encontrada) {
@@ -67,16 +51,8 @@ export function obtener_valor_numerico_fila(
 
 /**
  * Calcula el promedio de los valores positivos de una columna sobre un conjunto de filas.
- * @param filas_filtradas - Arreglo de filas de cinética.
- * @param palabras_clave - Palabras clave de la columna.
- * @param palabras_excluidas - Subcadenas a excluir.
- * @returns Promedio redondeado a 2 decimales o 0 si no hay datos.
  */
-export function calcular_promedio_columna_cinetica(
-  filas_filtradas: any[],
-  palabras_clave: string[],
-  palabras_excluidas?: string[]
-): number {
+export function calcular_promedio_columna_cinetica(filas_filtradas: any[], palabras_clave: string[], palabras_excluidas?: string[]): number {
   const valores_positivos = filas_filtradas
     .map((fila_actual) => obtener_valor_numerico_fila(fila_actual, palabras_clave, palabras_excluidas))
     .filter((valor_num) => valor_num > 0)
@@ -85,9 +61,7 @@ export function calcular_promedio_columna_cinetica(
 }
 
 /**
- * Construye las 11 tarjetas KPI de Inicio de Fermentación para la pestaña de Cinéticas.
- * @param filas_filtradas - Registros de cinética filtrados actualmente.
- * @returns Arreglo de tarjetas KPI con valores formateados.
+ * Construye las 12 tarjetas KPI de Arranque de Fermentación (incluyendo Atemperación en horas).
  */
 export function construir_kpis_inicio_fermentacion(filas_filtradas: any[]) {
   const fmt = (valor_num: number) => (valor_num === 0 ? "-" : valor_num.toString())
@@ -102,6 +76,7 @@ export function construir_kpis_inicio_fermentacion(filas_filtradas: any[]) {
     { id: "conteo", label: "Conteo Llenado", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Conteo de Celulas", "Conteo"])), unit: "x10^6", icon: "Activity", status: "ok" },
     { id: "temp", label: "Temp Llenado", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Temperatura de Llenado", "Temp. Llenado", "Temp"])), unit: "°C", icon: "Thermometer", status: "ok" },
     { id: "tiempo", label: "Tiempo Llenado", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Tiempo de Llenado", "Tiempo"])), unit: "h", icon: "Clock", status: "ok" },
+    { id: "atemperacion", label: "Atemperación", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Attemperacion", "Atemperacion", "Atemperación", "Tiempo de Atemperacion", "Tiempo de Atemperación", "Atemperado", "Tiempo de Almacenamiento", "Tiempo Almacenaje"])), unit: "h", icon: "Clock", status: "ok" },
     { id: "aireacion", label: "Aireación", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Aireacion", "Aireación"])), unit: "kg/hl", icon: "Wind", status: "ok" },
     { id: "tempAlm", label: "Temp Almacenaje", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Temperatura de Almacenamiento", "Almacenamiento"])), unit: "°C", icon: "Thermometer", status: "ok" },
     { id: "tiempoAlm", label: "Tiempo Almacenaje", value: fmt(calcular_promedio_columna_cinetica(filas_filtradas, ["Tiempo de Almacenamiento"])), unit: "h", icon: "Clock", status: "ok" },
@@ -111,15 +86,13 @@ export function construir_kpis_inicio_fermentacion(filas_filtradas: any[]) {
 }
 
 /**
- * Construye las filas de la tabla resumen de compuestos aromáticos y volátiles de fermentación.
- * @param filas_filtradas - Registros de cinética filtrados.
- * @returns Arreglo con mínimo, promedio, máximo y valor final por compuesto.
+ * Construye las filas de la tabla Resumen de Cinética con F1 (24h), F3 (72h), F6 (Término), R6/R8 y Valor Final.
  */
 export function construir_tabla_compuestos_cinetica(filas_filtradas: any[]) {
   const catalogo_compuestos = [
     { id: "esteres", name: "Ésteres", keys: ["Esteres", "Ésteres"] },
     { id: "alcoholes", name: "Alcoholes Superiores", keys: ["Alcoholes Superiores", "Alcoholes"] },
-    { id: "diacetilo", name: "Diacetilo", keys: ["Diacetilo"] },
+    { id: "diacetilo", name: "Diacetilo", keys: ["Diacetilo", "Diacetilo total"] },
     { id: "acetaldehido", name: "Acetaldehído", keys: ["Acetaldehido"] },
     { id: "dms", name: "DMS", keys: ["DMS"] },
     { id: "acetatoEtilo", name: "Acetato de Etilo", keys: ["Acetato de etilo"] },
@@ -129,38 +102,49 @@ export function construir_tabla_compuestos_cinetica(filas_filtradas: any[]) {
     { id: "isoamilico", name: "Alcohol Isoamílico", keys: ["Isoamil alcohol", "Alcohol isoamilico"] },
   ]
 
+  const obtener_valor_paso = (claves: string[], etapa_sub: string, dia_meta: number): string => {
+    const valores_paso = filas_filtradas
+      .filter((fila) => {
+        const etapa = obtener_propiedad_cinetica(fila, ["Etapa"])?.toString().trim().toUpperCase() || ""
+        const dias = parseInt(obtener_propiedad_cinetica(fila, ["Dias", "Días"])?.toString().trim() || "", 10)
+        return etapa.includes(etapa_sub) && dias === dia_meta
+      })
+      .map((fila) => obtener_valor_numerico_fila(fila, claves))
+      .filter((medicion) => medicion > 0 && !isNaN(medicion))
+    return valores_paso.length === 0 ? "-" : (valores_paso.reduce((acum, act) => acum + act, 0) / valores_paso.length).toFixed(2)
+  }
+
   return catalogo_compuestos.map((compuesto_actual) => {
-    const valores_comp = filas_filtradas.map((fila) => obtener_valor_numerico_fila(fila, compuesto_actual.keys)).filter((valor_medido) => valor_medido > 0)
+    const f1 = obtener_valor_paso(compuesto_actual.keys, "FERM", 1)
+    const f3 = obtener_valor_paso(compuesto_actual.keys, "FERM", 3)
+    const f6 = obtener_valor_paso(compuesto_actual.keys, "FERM", 6)
+    const r6 = obtener_valor_paso(compuesto_actual.keys, "REP", 6)
+    const r8 = obtener_valor_paso(compuesto_actual.keys, "REP", 8)
+    const r6_r8 = r6 !== "-" && r8 !== "-" ? (r6 === r8 ? r6 : `${r6} / ${r8}`) : (r8 !== "-" ? r8 : r6)
+    const valores_comp = filas_filtradas.map((fila) => obtener_valor_numerico_fila(fila, compuesto_actual.keys)).filter((med) => med > 0 && !isNaN(med))
     return {
       name: compuesto_actual.name,
-      avg: valores_comp.length ? (valores_comp.reduce((acumulador, valor_actual) => acumulador + valor_actual, 0) / valores_comp.length).toFixed(2) : "0",
-      min: valores_comp.length ? Math.min(...valores_comp).toFixed(2) : "0",
-      max: valores_comp.length ? Math.max(...valores_comp).toFixed(2) : "0",
-      last: valores_comp.length ? valores_comp[valores_comp.length - 1].toFixed(2) : "0",
+      f1, f3, f6, r6_r8,
+      last: valores_comp.length > 0 ? valores_comp[valores_comp.length - 1].toFixed(2) : "-",
     }
   })
 }
 
 /**
- * Construye la serie temporal de evolución cinética a través de los días de Fermentación (F) y Reposo (R).
- * @param filas_filtradas - Registros de cinética filtrados.
- * @returns Arreglo de puntos por paso de proceso con promedios de cada compuesto.
+ * Construye la serie de evolución cinética limitada hasta F6 en fermentación y desde R1 en reposo (sin F7+ ni R0).
  */
 export function construir_serie_evolucion_cinetica(filas_filtradas: any[]) {
-  let max_ferm = 7, max_dia_rep_datos = -1
-  const max_rep = 12
+  const max_ferm = 6, max_rep = 12
+  let max_dia_rep_datos = -1
   filas_filtradas.forEach((fila) => {
     const etapa = obtener_propiedad_cinetica(fila, ["Etapa"])?.toString().trim().toUpperCase() || ""
     const num_dia = parseInt(obtener_propiedad_cinetica(fila, ["Dias", "Días"])?.toString().trim() || "", 10)
-    if (!isNaN(num_dia) && num_dia >= 0 && num_dia <= 30) {
-      if (etapa.includes("FERM") && num_dia > max_ferm) max_ferm = num_dia
-      if (etapa.includes("REP") && num_dia > max_dia_rep_datos) max_dia_rep_datos = num_dia
-    }
+    if (!isNaN(num_dia) && num_dia >= 1 && num_dia <= 30 && etapa.includes("REP") && num_dia > max_dia_rep_datos) max_dia_rep_datos = num_dia
   })
 
   const pasos_proceso: string[] = []
   for (let dia_f = 0; dia_f <= max_ferm; dia_f++) pasos_proceso.push(`F${dia_f}`)
-  for (let dia_r = 0; dia_r <= max_rep; dia_r++) pasos_proceso.push(`R${dia_r}`)
+  for (let dia_r = 1; dia_r <= max_rep; dia_r++) pasos_proceso.push(`R${dia_r}`)
   const ultimos_valores: Record<string, number | null> = {}
 
   return pasos_proceso.map((etiqueta_paso) => {
@@ -174,9 +158,9 @@ export function construir_serie_evolucion_cinetica(filas_filtradas: any[]) {
 
     const promediar = (claves: string[]) => {
       const clave_id = claves[0]
-      const valores_paso = filas_del_paso.map((fila) => obtener_valor_numerico_fila(fila, claves)).filter((valor_medido) => valor_medido > 0 && !isNaN(valor_medido))
+      const valores_paso = filas_del_paso.map((fila) => obtener_valor_numerico_fila(fila, claves)).filter((med) => med > 0 && !isNaN(med))
       if (valores_paso.length > 0) {
-        ultimos_valores[clave_id] = parseFloat((valores_paso.reduce((acumulador, valor_actual) => acumulador + valor_actual, 0) / valores_paso.length).toFixed(2))
+        ultimos_valores[clave_id] = parseFloat((valores_paso.reduce((acum, act) => acum + act, 0) / valores_paso.length).toFixed(2))
         return ultimos_valores[clave_id]
       }
       const es_post_rep = etiqueta_paso.startsWith("R") && Number(etiqueta_paso.slice(1)) > max_dia_rep_datos

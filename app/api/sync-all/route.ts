@@ -6,7 +6,8 @@
 import { NextResponse } from "next/server"
 import { procesar_lote_propagacion } from "@/lib/services/servicio_sincronizacion_propagacion"
 import { procesar_lote_cinetica } from "@/lib/services/servicio_sincronizacion_cinetica"
-import { guardar_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
+import { guardar_documento_respaldado, leer_documento_respaldado } from "@/lib/services/servicio_almacenamiento_json"
+import { normalizar_registros_aber } from "@/lib/services/servicio_validacion_aber"
 import {
   CABECERAS_CORS_API,
   construir_respuesta_preflight_cors,
@@ -71,14 +72,33 @@ export async function POST(peticion_entrante: Request): Promise<NextResponse> {
         : null
 
     if (registros_aber_entrantes) {
+      const respaldo_aber_previo = await leer_documento_respaldado("aber_stats", "database_aber.json")
+      const filas_previas = Array.isArray(respaldo_aber_previo?.rawData) ? respaldo_aber_previo.rawData : []
+      const registros_aber_limpios = normalizar_registros_aber(registros_aber_entrantes).map((fila_norm, idx_fila) => {
+        const fila_previa = filas_previas[idx_fila]
+        const lac_previo = Number(fila_previa?.conteoLacAvg ?? fila_previa?.conteoLac ?? 0)
+        const conteo_lac_final = (fila_norm.conteoLac && fila_norm.conteoLac > 0)
+          ? fila_norm.conteoLac
+          : (fila_previa?.linea === fila_norm.linea && lac_previo > 0 ? lac_previo : (fila_norm.conteoLac ?? 0))
+        const conteo_aber_final = fila_norm.conteoAber ?? 0
+        const diferencia_final = conteo_aber_final > 0 && conteo_lac_final > 0
+          ? Number((conteo_aber_final - conteo_lac_final).toFixed(2))
+          : (fila_norm.diferencia ?? 0)
+        return {
+          ...fila_norm,
+          conteoAber: conteo_aber_final,
+          conteoLacAvg: conteo_lac_final,
+          diferencia: diferencia_final
+        }
+      })
       const paquete_aber = {
         lastUpdated: new Date().toISOString(),
         ultimaActualizacion: new Date().toISOString(),
-        totalRecords: registros_aber_entrantes.length,
-        rawData: registros_aber_entrantes
+        totalRecords: registros_aber_limpios.length,
+        rawData: registros_aber_limpios
       }
       await guardar_documento_respaldado("aber_stats", "database_aber.json", paquete_aber)
-      conteo_aber = registros_aber_entrantes.length
+      conteo_aber = registros_aber_limpios.length
     }
 
     return NextResponse.json(

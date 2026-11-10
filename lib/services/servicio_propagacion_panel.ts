@@ -4,6 +4,7 @@
  */
 
 import { indicadores_kpi_propagacion, type Kpi } from "@/lib/mock_data"
+import { comparar_generaciones_cultivo } from "@/lib/utils"
 
 export interface FiltrosPropagacionActivos {
   generaciones: string[]
@@ -18,40 +19,36 @@ export interface FiltrosPropagacionActivos {
  * @param registros_normalizados - Arreglo de registros de propagación ya normalizados.
  * @returns Opciones únicas para generación, tipo de levadura, dobleteo, tanque y fecha.
  */
-export function extraer_opciones_filtro_propagacion(registros_normalizados: Record<string, any>[]) {
+export function extraer_opciones_filtro_propagacion(
+  registros_normalizados: Record<string, any>[],
+  tipos_seleccionados: string[] = [],
+  generaciones_seleccionadas: string[] = []
+) {
   const es_valor_valido = (texto_evaluado: string) =>
     Boolean(texto_evaluado && texto_evaluado !== "N/A" && texto_evaluado !== "UNDEFINED")
+  const extraer_unicos = (fuente: Record<string, any>[], selector: (fila: Record<string, any>) => string) =>
+    Array.from(new Set(fuente.map(selector))).filter(es_valor_valido)
 
-  const generaciones_unicas = Array.from(
-    new Set(registros_normalizados.map((fila_actual) => fila_actual.generacion?.toString().trim()))
-  ).filter(es_valor_valido) as string[]
-  generaciones_unicas.sort((gen_a, gen_b) => Number(gen_a) - Number(gen_b))
+  const tipos_unicos = extraer_unicos(registros_normalizados, (fila) => fila.tipoLev?.toString().trim().toUpperCase())
+    .filter((tipo_actual) => tipo_actual !== "GENERAL").sort()
 
-  const tipos_unicos = Array.from(
-    new Set(registros_normalizados.map((fila_actual) => fila_actual.tipoLev?.toString().trim().toUpperCase()))
-  ).filter((tipo_actual) => es_valor_valido(tipo_actual) && tipo_actual !== "GENERAL") as string[]
-  tipos_unicos.sort()
+  const base_por_tipo = tipos_seleccionados.length > 0
+    ? registros_normalizados.filter((fila) => tipos_seleccionados.includes(fila.tipoLev?.toString().trim().toUpperCase()))
+    : registros_normalizados
 
-  const dobleteos_unicos = Array.from(
-    new Set(registros_normalizados.map((fila_actual) => fila_actual.dobleteo?.toString().trim()))
-  ).filter(es_valor_valido) as string[]
-  dobleteos_unicos.sort()
+  const generaciones_unicas = extraer_unicos(base_por_tipo, (fila) => fila.generacion?.toString().trim())
+    .sort(comparar_generaciones_cultivo)
 
-  const tanques_unicos = Array.from(
-    new Set(registros_normalizados.map((fila_actual) => fila_actual.tanque?.toString().trim().toUpperCase()))
-  ).filter(es_valor_valido) as string[]
-  tanques_unicos.sort()
-
-  const fechas_unicas = Array.from(
-    new Set(registros_normalizados.map((fila_actual) => fila_actual.fecha?.toString().trim()))
-  ).filter(es_valor_valido) as string[]
+  const base_cascada = generaciones_seleccionadas.length > 0
+    ? base_por_tipo.filter((fila) => generaciones_seleccionadas.includes(fila.generacion?.toString().trim()))
+    : base_por_tipo
 
   return {
     generaciones_unicas,
     tipos_unicos,
-    dobleteos_unicos,
-    tanques_unicos,
-    fechas_unicas,
+    dobleteos_unicos: extraer_unicos(base_cascada, (fila) => fila.dobleteo?.toString().trim()).sort(),
+    tanques_unicos: extraer_unicos(base_cascada, (fila) => fila.tanque?.toString().trim().toUpperCase()).sort(),
+    fechas_unicas: extraer_unicos(base_cascada, (fila) => fila.fecha?.toString().trim()),
   }
 }
 
@@ -112,6 +109,7 @@ export function construir_puntos_propagacion_filtrados(
     purga: fila_actual.purga || 0,
     aireacion: fila_actual.aireacion || 0,
     zn: fila_actual.zn || 0,
+    atemperacion: fila_actual.atemperacion || 0,
   }))
 }
 
@@ -142,6 +140,7 @@ export function calcular_tarjetas_kpi_propagacion(puntos_propagacion: Record<str
     escalamiento: "escalamiento",
     presion: "presion",
     purga: "purga",
+    atemperacion: "atemperacion",
   }
 
   return indicadores_kpi_propagacion.map((tarjeta_base) => {

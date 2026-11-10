@@ -56,7 +56,7 @@ export function ViabilityChart({ dynamicData: datos_dinamicos }: PropiedadesGraf
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="hora" {...propiedades_ejes} />
-              <YAxis domain={[0, 100]} {...propiedades_ejes} />
+              <YAxis domain={[75, 100]} ticks={[75, 80, 85, 90, 95, 100]} allowDataOverflow {...propiedades_ejes} />
               <Tooltip {...estilo_tooltip} />
               <Legend wrapperStyle={{ fontSize: 10, color: "#888888" }} />
               <ReferenceLine

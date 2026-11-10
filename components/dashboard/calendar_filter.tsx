@@ -135,7 +135,7 @@ export function CalendarFilter({
       <label className="text-zinc-400 text-xs uppercase font-bold tracking-wider">{etiqueta_filtro}</label>
       <div className="relative">
         <button type="button" onClick={() => cambiar_estado_abierto(!esta_abierto)} className="bg-black border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 outline-none hover:border-yellow-500 focus:border-yellow-500 min-w-[120px] flex justify-between items-center">
-          <span className="truncate">{fechas_seleccionadas.length === 0 ? "(Vacío)" : `${fechas_seleccionadas.length} seleccionadas`}</span>
+          <span className="truncate">{fechas_seleccionadas.length === 0 ? "Todas" : `${fechas_seleccionadas.length} seleccionadas`}</span>
           <span className="ml-2 text-[10px]">▼</span>
         </button>
 

@@ -57,7 +57,7 @@ export function CheckboxFilter({
         >
           <span className="truncate">
             {opciones_seleccionadas.length === 0
-              ? "(Vacío)"
+              ? "Todas"
               : `${opciones_seleccionadas.length} seleccionadas`}
           </span>
           <span className="ml-2 text-[10px]">▼</span>
@@ -77,7 +77,7 @@ export function CheckboxFilter({
                   checked={opciones_seleccionadas.length === 0}
                   onChange={() => actualizar_seleccion([])}
                 />
-                (Vacío)
+                Todas
               </label>
             )}
 

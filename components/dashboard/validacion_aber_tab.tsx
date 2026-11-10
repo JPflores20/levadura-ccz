@@ -10,7 +10,6 @@ import useSWR from "swr"
 import { CheckboxFilter } from "@/components/dashboard/checkbox_filter"
 import { CalendarFilter } from "@/components/dashboard/calendar_filter"
 import { FilterStatusBar } from "@/components/dashboard/filter_status_bar"
-import { ExcelProcessorAber } from "@/components/dashboard/cultivo/excel_processor_aber"
 import { AberValidationCharts } from "@/components/dashboard/aber/aber_validation_charts"
 import {
   RUTAS_API_PANEL,
@@ -20,7 +19,9 @@ import {
 import {
   normalizar_registros_aber,
   obtener_base_mediciones_validas_aber,
-  agrupar_desviacion_por_fecha_aber
+  obtener_mediciones_solidos_validas_aber,
+  agrupar_desviacion_por_fecha_aber,
+  RegistroAberNormalizado
 } from "@/lib/services/servicio_validacion_aber"
 
 /**
@@ -48,14 +49,16 @@ export function ValidacionAberTab() {
 
   const todos_normalizados = normalizar_registros_aber(registros_crudos)
   const datos_base_validos = obtener_base_mediciones_validas_aber(todos_normalizados)
+  const datos_solidos_validos = obtener_mediciones_solidos_validas_aber(todos_normalizados)
+  const universo_opciones = datos_solidos_validos.length >= datos_base_validos.length ? datos_solidos_validos : datos_base_validos
 
-  const lineas_unicas = (Array.from(new Set(datos_base_validos.map((registro) => registro.linea))).filter((linea) => linea && linea !== "N/A") as string[]).sort()
-  const fechas_unicas = Array.from(new Set(datos_base_validos.map((registro) => registro.fecha))).filter((fecha) => fecha && fecha !== "N/A") as string[]
-  const marcas_unicas = (Array.from(new Set(datos_base_validos.map((registro) => registro.marca))).filter(Boolean) as string[]).sort()
+  const lineas_unicas = (Array.from(new Set(universo_opciones.map((registro) => registro.linea))).filter((linea) => linea && linea !== "N/A") as string[]).sort()
+  const fechas_unicas = Array.from(new Set(universo_opciones.map((registro) => registro.fecha))).filter((fecha) => fecha && fecha !== "N/A") as string[]
+  const marcas_unicas = (Array.from(new Set(universo_opciones.map((registro) => registro.marca))).filter(Boolean) as string[]).sort()
 
   const origen_tanques = filtro_marca.length > 0
-    ? datos_base_validos.filter((registro) => filtro_marca.includes(registro.marca))
-    : datos_base_validos
+    ? universo_opciones.filter((registro) => filtro_marca.includes(registro.marca))
+    : universo_opciones
   const tanques_unicos = (Array.from(new Set(origen_tanques.map((registro) => registro.tanque))).filter(Boolean) as string[]).sort()
 
   const tiene_filtros_activos =
@@ -68,26 +71,40 @@ export function ValidacionAberTab() {
     establecer_filtro_tanque([])
   }
 
-  const datos_correlacion_filtrados = datos_base_validos.filter((registro) => {
+  const cumple_filtros_activos = (registro: RegistroAberNormalizado): boolean => {
     if (filtro_linea.length > 0 && !filtro_linea.includes(registro.linea)) return false
     if (filtro_fecha.length > 0 && !filtro_fecha.includes(registro.fecha)) return false
     if (filtro_marca.length > 0 && !filtro_marca.includes(registro.marca)) return false
     if (filtro_tanque.length > 0 && !filtro_tanque.includes(registro.tanque)) return false
     return true
-  })
+  }
 
-  const correlacion_linea_1 = datos_correlacion_filtrados.filter((registro) => String(registro.linea).includes("1"))
-  const correlacion_linea_2 = datos_correlacion_filtrados.filter((registro) => String(registro.linea).includes("2"))
-  const datos_desviacion_tiempo = agrupar_desviacion_por_fecha_aber(datos_correlacion_filtrados)
+  const datos_conteos_filtrados = datos_base_validos.filter(cumple_filtros_activos)
+  const datos_solidos_filtrados = datos_solidos_validos.filter(cumple_filtros_activos)
+  const base_tendencias_filtrada = todos_normalizados.filter(cumple_filtros_activos)
+
+  const correlacion_linea_1 = datos_conteos_filtrados.filter((registro) => String(registro.linea).includes("1"))
+  const correlacion_linea_2 = datos_conteos_filtrados.filter((registro) => String(registro.linea).includes("2"))
+  const correlacion_solidos_l1 = datos_solidos_filtrados.filter((registro) => String(registro.linea).includes("1"))
+  const correlacion_solidos_l2 = datos_solidos_filtrados.filter((registro) => String(registro.linea).includes("2"))
+  const datos_desviacion_tiempo = agrupar_desviacion_por_fecha_aber(base_tendencias_filtrada)
 
   const valor_maximo_conteo = Math.max(
-    ...datos_correlacion_filtrados.map((registro) => Math.max(registro.conteoAber || 0, registro.conteoLac || 0)),
+    ...datos_conteos_filtrados.map((registro) => Math.max(registro.conteoAber || 0, registro.conteoLac || 0)),
+    0
+  )
+  const valor_maximo_solidos = Math.max(
+    ...datos_solidos_filtrados.map((registro) => Math.max(registro.solidosReales || 0, registro.solidosVivosLab || 0)),
     0
   )
 
   const linea_calibracion_ideal = [
     { conteoAber: 0, conteoLac: 0 },
     { conteoAber: valor_maximo_conteo, conteoLac: valor_maximo_conteo }
+  ]
+  const linea_ideal_solidos = [
+    { solidosReales: 0, solidosVivosLab: 0 },
+    { solidosReales: valor_maximo_solidos, solidosVivosLab: valor_maximo_solidos }
   ]
 
   return (
@@ -96,7 +113,7 @@ export function ValidacionAberTab() {
         <div className="flex flex-col">
           <h2 className="text-sm font-bold text-yellow-500 tracking-widest">AUDITORÍA DE ABBERS</h2>
           <p className="text-xs text-zinc-400">
-            Comparación Medición en Abber (Equipo) vs Medición en Vicell (Laboratorio)
+            Correlación de Sólidos y Conteos (Línea 1 / Línea 2) y Tendencias de Error
           </p>
         </div>
 
@@ -109,23 +126,24 @@ export function ValidacionAberTab() {
             <CheckboxFilter label="Tanque" options={tanques_unicos} selectedOptions={filtro_tanque} onChange={establecer_filtro_tanque} isOpen={abierto_tanque} setIsOpen={establecer_abierto_tanque} />
           )}
           <CalendarFilter label="Fecha" options={fechas_unicas} selectedOptions={filtro_fecha} onChange={establecer_filtro_fecha} isOpen={abierto_fecha} setIsOpen={establecer_abierto_fecha} />
-          <FilterStatusBar registros_filtrados={datos_correlacion_filtrados.length} registros_totales={datos_base_validos.length} tiene_filtros_activos={tiene_filtros_activos} al_limpiar_filtros={limpiar_todos_los_filtros} esta_cargando={esta_cargando_remotos}>
-            <ExcelProcessorAber />
-          </FilterStatusBar>
+          <FilterStatusBar registros_filtrados={base_tendencias_filtrada.length} registros_totales={todos_normalizados.length} tiene_filtros_activos={tiene_filtros_activos} al_limpiar_filtros={limpiar_todos_los_filtros} esta_cargando={esta_cargando_remotos} />
         </div>
       </div>
 
       {registros_crudos.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/50">
           <p className="text-sm font-medium text-zinc-400">
-            Sube el archivo de Validación Abber para ver las métricas.
+            Sincroniza desde el script de Excel para ver las métricas de Auditoría Abber.
           </p>
         </div>
       ) : (
         <AberValidationCharts
           correlationLinea1={correlacion_linea_1}
           correlationLinea2={correlacion_linea_2}
+          correlationSolidosL1={correlacion_solidos_l1}
+          correlationSolidosL2={correlacion_solidos_l2}
           idealLine={linea_calibracion_ideal}
+          idealSolidosLine={linea_ideal_solidos}
           diffOverTimeData={datos_desviacion_tiempo}
         />
       )}

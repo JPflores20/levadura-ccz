@@ -9,25 +9,21 @@ import "./configuracion_pruebas.mjs"
 
 const { extraer_valor_columna_cinetica, normalizar_nombre_compuesto_volatil, procesar_lote_cinetica } =
   await import("../lib/services/servicio_sincronizacion_cinetica.ts")
-
 const {
   obtener_propiedad_cinetica, obtener_valor_numerico_fila, calcular_promedio_columna_cinetica,
   construir_kpis_inicio_fermentacion, construir_tabla_compuestos_cinetica, construir_serie_evolucion_cinetica
 } = await import("../lib/services/servicio_cinetica_fermentacion.ts")
-
 const {
   agrupar_estadisticas_volatiles_4v, extraer_opciones_gen_vuelta_4v,
   ordenar_tanques_por_completitud, preparar_serie_comparativa_volatil
 } = await import("../lib/services/servicio_comparacion_4v.ts")
 
 test("89. extraer_valor_columna_cinetica prioriza coincidencia exacta sobre coincidencia parcial", () => {
-  const fila = { "Viabilidad Primer Vuelta": 94, Viabilidad: 98 }
-  assert.equal(extraer_valor_columna_cinetica(fila, ["Viabilidad"]), 98)
+  assert.equal(extraer_valor_columna_cinetica({ "Viabilidad Primer Vuelta": 94, Viabilidad: 98 }, ["Viabilidad"]), 98)
 })
 
 test("90. extraer_valor_columna_cinetica usa coincidencia parcial cuando no hay llave exacta", () => {
-  const fila = { "Conteo de Celulas x106 (Cel/mL)": 17.81 }
-  assert.equal(extraer_valor_columna_cinetica(fila, ["Conteo de Celulas"]), 17.81)
+  assert.equal(extraer_valor_columna_cinetica({ "Conteo de Celulas x106 (Cel/mL)": 17.81 }, ["Conteo de Celulas"]), 17.81)
 })
 
 test("91. extraer_valor_columna_cinetica devuelve cadena vacía cuando la columna no existe o está vacía", () => {
@@ -79,22 +75,21 @@ test("98. obtener_propiedad_cinetica ignora espacios y puntos al buscar columnas
 })
 
 test("99. obtener_valor_numerico_fila respeta lista de palabras excluidas (ej. excluir 'muy' en Vigorosas)", () => {
-  const fila = { "Celulas Muy Vigorosas": 92, "Celulas Vigorosas": 6 }
-  assert.equal(obtener_valor_numerico_fila(fila, ["Vigorosas"], ["muy"]), 6)
+  assert.equal(obtener_valor_numerico_fila({ "Celulas Muy Vigorosas": 92, "Celulas Vigorosas": 6 }, ["Vigorosas"], ["muy"]), 6)
 })
 
 test("100. calcular_promedio_columna_cinetica promedia únicamente valores positivos", () => {
-  const filas = [{ "E.L": 0 }, { "E.L": 3.5 }, { "E.L": 4.5 }]
-  assert.equal(calcular_promedio_columna_cinetica(filas, ["E.L"]), 4)
+  assert.equal(calcular_promedio_columna_cinetica([{ "E.L": 0 }, { "E.L": 3.5 }, { "E.L": 4.5 }], ["E.L"]), 4)
 })
 
-test("101. construir_kpis_inicio_fermentacion genera las 11 tarjetas KPI sumando Vigorosas + Muy Vigorosas", () => {
+test("101. construir_kpis_inicio_fermentacion genera las 12 tarjetas KPI incluyendo Atemperación", () => {
   const kpis = construir_kpis_inicio_fermentacion([
-    { "Celulas Vigorosas": 5, "Celulas Muy Vigorosas": 93, Viabilidad: 98, "E.L": 3.8 }
+    { "Celulas Vigorosas": 5, "Celulas Muy Vigorosas": 93, Viabilidad: 98, "E.L": 3.8, Atemperacion: 14.5 }
   ])
-  assert.equal(kpis.length, 11)
+  assert.equal(kpis.length, 12)
   assert.equal(kpis.find((tarjeta) => tarjeta.id === "vitalidad").value, "98")
   assert.equal(kpis.find((tarjeta) => tarjeta.id === "el").value, "3.8")
+  assert.equal(kpis.find((tarjeta) => tarjeta.id === "atemperacion").value, "14.5")
 })
 
 test("102. construir_kpis_inicio_fermentacion muestra '-' cuando una métrica no tiene mediciones", () => {
@@ -102,26 +97,31 @@ test("102. construir_kpis_inicio_fermentacion muestra '-' cuando una métrica no
   assert.equal(kpis.find((tarjeta) => tarjeta.id === "glucosa").value, "-")
 })
 
-test("103. construir_tabla_compuestos_cinetica calcula avg, min, max y last para los 10 compuestos", () => {
+test("103. construir_tabla_compuestos_cinetica calcula f1, f3, f6, r6_r8 y last para los 10 compuestos", () => {
   const tabla = construir_tabla_compuestos_cinetica([
-    { Esteres: 30, "Diacetilo total": 200 },
-    { Esteres: 40, "Diacetilo total": 100 }
+    { Etapa: "Fermentación", Dias: 1, Esteres: 12 },
+    { Etapa: "Fermentación", Dias: 3, Esteres: 25 },
+    { Etapa: "Fermentación", Dias: 6, Esteres: 34 },
+    { Etapa: "Reposo", Dias: 6, Esteres: 38 },
+    { Etapa: "Reposo", Dias: 8, Esteres: 40 }
   ])
   assert.equal(tabla.length, 10)
   const fila_esteres = tabla.find((compuesto) => compuesto.name === "Ésteres")
-  assert.equal(fila_esteres.avg, "35.00")
-  assert.equal(fila_esteres.min, "30.00")
-  assert.equal(fila_esteres.max, "40.00")
+  assert.equal(fila_esteres.f1, "12.00")
+  assert.equal(fila_esteres.f3, "25.00")
+  assert.equal(fila_esteres.f6, "34.00")
+  assert.equal(fila_esteres.r6_r8, "38.00 / 40.00")
   assert.equal(fila_esteres.last, "40.00")
 })
 
-test("104. construir_serie_evolucion_cinetica construye pasos F0..Fn y R0..Rn", () => {
+test("104. construir_serie_evolucion_cinetica construye pasos F0..F6 y R1..Rn omitiendo R0", () => {
   const serie = construir_serie_evolucion_cinetica([
     { Etapa: "Fermentación", Dias: 1, Acetaldehido: 24.5 },
     { Etapa: "Reposo", Dias: 2, Acetaldehido: 8.2 }
   ])
   assert.equal(serie.find((punto) => punto.paso === "F1").acetaldehido, 24.5)
   assert.equal(serie.find((punto) => punto.paso === "R2").acetaldehido, 8.2)
+  assert.equal(serie.some((punto) => punto.paso === "R0"), false)
 })
 
 test("105. agrupar_estadisticas_volatiles_4v extrae series, generación y vuelta heredada por tanque", () => {
@@ -142,16 +142,14 @@ test("106. agrupar_estadisticas_volatiles_4v separa correctamente ISOAMILO de IS
   const agrupados = agrupar_estadisticas_volatiles_4v([
     { Fecha: 46214, Marca: "BL", Etapa: "Fermentación", Dias: 3, TCC: "201", "Acetato de isoamilo": 3.5, "Isoamil alcohol": 115 }
   ])
-  const compuestos = agrupados.map((serie) => serie.volatil).sort()
-  assert.deepEqual(compuestos, ["ISOAMILICO", "ISOAMILO"])
+  assert.deepEqual(agrupados.map((serie) => serie.volatil).sort(), ["ISOAMILICO", "ISOAMILO"])
 })
 
 test("107. agrupar_estadisticas_volatiles_4v mapea Acetato de etilo a ETILO y Alcoholes Superiores a ALCOHOLES", () => {
   const agrupados = agrupar_estadisticas_volatiles_4v([
     { Fecha: 46214, Marca: "MICHELOB", Etapa: "Reposo", Dias: 1, TCC: "305", "Acetato de etilo": 28, "Alcoholes Superiores": 160 }
   ])
-  const compuestos = agrupados.map((serie) => serie.volatil).sort()
-  assert.deepEqual(compuestos, ["ALCOHOLES", "ETILO"])
+  assert.deepEqual(agrupados.map((serie) => serie.volatil).sort(), ["ALCOHOLES", "ETILO"])
 })
 
 test("108. ordenar_tanques_por_completitud prioriza el tanque con más compuestos registrados", () => {
@@ -161,8 +159,7 @@ test("108. ordenar_tanques_por_completitud prioriza el tanque con más compuesto
     { tanque: "102", cepa: "CORONA", volatil: "ESTERES" },
     { tanque: "102", cepa: "CORONA", volatil: "PROPANOL" }
   ]
-  const ordenados = ordenar_tanques_por_completitud(datos_agrupados, "CORONA", ["101", "102"])
-  assert.deepEqual(ordenados, ["102", "101"])
+  assert.deepEqual(ordenar_tanques_por_completitud(datos_agrupados, "CORONA", ["101", "102"]), ["102", "101"])
 })
 
 test("109. ordenar_tanques_por_completitud devuelve arreglo vacío si la lista de tanques está vacía", () => {
@@ -180,18 +177,22 @@ test("110. preparar_serie_comparativa_volatil alinea Tanque A y Tanques B en pas
   assert.equal(serie[serie.length - 1].valorA, 250)
 })
 
-test("111. preparar_serie_comparativa_volatil incluye F0 y R0 cuando existen mediciones en día 0 y llega a R12", () => {
+test("111. preparar_serie_comparativa_volatil incluye F0 cuando existe en día 0, omite R0 y F7+, y llega a R12", () => {
   const datos_a = [
-    { volatil: "ESTERES", etapa: "FERMENTACION", vueltas: { "0": 5, "1": 15 } },
+    { volatil: "ESTERES", etapa: "FERMENTACION", vueltas: { "0": 5, "1": 15, "6": 34, "7": 36 } },
     { volatil: "ESTERES", etapa: "REPOSO", vueltas: { "0": 32, "1": 35 } }
   ]
-  const serie = preparar_serie_comparativa_volatil("ESTERES", datos_a, [])
-  const etiquetas = serie.map((punto) => punto.vuelta)
-  assert.ok(etiquetas.includes("F0") && etiquetas.includes("R0"))
+  const etiquetas = preparar_serie_comparativa_volatil("ESTERES", datos_a, []).map((punto) => punto.vuelta)
+  assert.ok(etiquetas.includes("F0") && etiquetas.includes("F6"))
+  assert.equal(etiquetas.includes("F7") || etiquetas.includes("R0"), false)
   assert.equal(etiquetas[etiquetas.length - 1], "R12")
 })
 
-test("112. construir_serie_evolucion_cinetica amplía dinámicamente max_ferm cuando supera 7 días", () => {
-  const serie = construir_serie_evolucion_cinetica([{ Etapa: "Fermentación", Dias: 10, Esteres: 41.2 }])
-  assert.ok(serie.some((punto) => punto.paso === "F10" && punto.esteres === 41.2))
+test("112. construir_serie_evolucion_cinetica limita fermentación hasta F6 y omite F7+ y R0", () => {
+  const serie = construir_serie_evolucion_cinetica([
+    { Etapa: "Fermentación", Dias: 6, Esteres: 38.4 },
+    { Etapa: "Fermentación", Dias: 7, Esteres: 41.2 }
+  ])
+  assert.ok(serie.some((punto) => punto.paso === "F6" && punto.esteres === 38.4))
+  assert.equal(serie.some((punto) => punto.paso === "F7" || punto.paso === "R0"), false)
 })

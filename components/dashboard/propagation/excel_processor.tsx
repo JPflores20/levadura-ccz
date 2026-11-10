@@ -108,25 +108,6 @@ export function ExcelProcessor({
 
   return (
     <div className="flex items-center gap-2">
-      <input
-        type="file"
-        accept=".xlsx, .xls"
-        ref={referencia_input_archivo}
-        onChange={manejar_subida_archivo}
-        className="hidden"
-      />
-
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-7 text-[10px] bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20 hover:text-yellow-400"
-        onClick={() => referencia_input_archivo.current?.click()}
-        disabled={esta_procesando_archivo}
-      >
-        <Upload className="size-3 mr-1" />
-        {esta_procesando_archivo ? "Procesando..." : "Subir Excel"}
-      </Button>
-
       <Button
         variant="outline"
         size="sm"

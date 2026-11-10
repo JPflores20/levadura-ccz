@@ -95,9 +95,10 @@ test("64. normalizar_fila_propagacion estandariza Dobleteo ('ANTES' -> 'Antes', 
   assert.equal(normalizar_fila_propagacion({ Dobleteo: "Calberg" }).dobleteo, "Calberg")
 })
 
-test("65. normalizar_fila_propagacion limpia espacios múltiples y pasa a mayúsculas el Tanque", () => {
-  const fila = normalizar_fila_propagacion({ Tanque: "  tcc   16  " })
+test("65. normalizar_fila_propagacion limpia espacios en Tanque y construye generacion con Codigo de Cultivo y Año", () => {
+  const fila = normalizar_fila_propagacion({ Tanque: "  tcc   16  ", "Codigo de Cultivo": "XXVIII", "Año": 2026 })
   assert.equal(fila.tanque, "TCC 16")
+  assert.equal(fila.generacion, "XXVIII-2026")
 })
 
 test("66. normalizar_fila_propagacion suma Vitalidad muy vigorosas + vigorosas cuando ambas existen", () => {

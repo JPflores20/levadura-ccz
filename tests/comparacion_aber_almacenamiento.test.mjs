@@ -84,13 +84,16 @@ test("117. construir_serie_cinetica_comparativa alinea muestras de Cultivo A y C
   assert.equal(serie[0].viabB, 98)
 })
 
-test("118. normalizar_registros_aber calcula diferencia (conteoAber - conteoLac) automáticamente", () => {
+test("118. normalizar_registros_aber calcula diferencia y métricas de sólidos automáticamente", () => {
   const normalizados = normalizar_registros_aber([
-    { LINEA: "Línea 1", FECHA: 45854, Marca: "CORONA", TCC: "108", "CONTEO ABER": 52.5, "PROMEDIO DE CONTEO LAC": 50.0, "% Solidos": 72 }
+    { LINEA: "Línea 1", FECHA: 45854, Marca: "CORONA", TCC: "108", "CONTEO ABER": 52.5, "PROMEDIO DE CONTEO LAC": 50.0, "% Solidos": 72, viabilidadAvg: 0.95 }
   ])
   assert.equal(normalizados[0].fecha, "16/07/2025")
   assert.equal(normalizados[0].diferencia, 2.5)
   assert.equal(normalizados[0].solidosAvg, 72)
+  assert.equal(normalizados[0].solidosReales, 72)
+  assert.equal(normalizados[0].solidosVivosLab, 68.4)
+  assert.equal(normalizados[0].errorSolidos, 3.6)
 })
 
 test("119. obtener_base_mediciones_validas_aber filtra registros con ambos conteos > 0", () => {
@@ -105,8 +108,8 @@ test("119. obtener_base_mediciones_validas_aber filtra registros con ambos conte
 
 test("120. agrupar_desviacion_por_fecha_aber separa promedios de Línea 1 y Línea 2 por fecha", () => {
   const datos = [
-    { linea: "LINEA 1", fecha: "16/07/2025", marca: "CORONA", tanque: "101", conteoAber: 52, conteoLac: 50, diferencia: 2, solidosAvg: 70 },
-    { linea: "LINEA 2", fecha: "16/07/2025", marca: "CORONA", tanque: "102", conteoAber: 48, conteoLac: 50, diferencia: -2, solidosAvg: 74 }
+    { linea: "LINEA 1", fecha: "16/07/2025", marca: "CORONA", tanque: "101", conteoAber: 52, conteoLac: 50, diferencia: 2, solidosAvg: 70, errorSolidos: 2.1 },
+    { linea: "LINEA 2", fecha: "16/07/2025", marca: "CORONA", tanque: "102", conteoAber: 48, conteoLac: 50, diferencia: -2, solidosAvg: 74, errorSolidos: 2.22 }
   ]
   const agrupados = agrupar_desviacion_por_fecha_aber(datos)
   assert.equal(agrupados.length, 1)
@@ -114,6 +117,8 @@ test("120. agrupar_desviacion_por_fecha_aber separa promedios de Línea 1 y Lín
   assert.equal(agrupados[0].diffL2, -2)
   assert.equal(agrupados[0].solidosL1, 70)
   assert.equal(agrupados[0].solidosL2, 74)
+  assert.equal(agrupados[0].errorSolidosL1, 2.1)
+  assert.equal(agrupados[0].errorSolidosL2, 2.22)
 })
 
 test("121. compactar_registros_para_nube elimina propiedades vacías ('', null, undefined)", () => {

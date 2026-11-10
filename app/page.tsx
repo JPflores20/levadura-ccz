@@ -37,7 +37,7 @@ export default function Page() {
               </TabsTrigger>
               <TabsTrigger value="cinetica-4v" className="data-active:border-yellow-500/40">
                 <LineChart data-icon="inline-start" className="text-yellow-500" />
-                Cinéticas
+                Resumen de cinética
               </TabsTrigger>
               <TabsTrigger value="comparacion-4v" className="data-active:border-yellow-500/40">
                 <BarChart3 data-icon="inline-start" className="text-yellow-500" />

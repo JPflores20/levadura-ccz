@@ -85,6 +85,7 @@ export const indicadores_kpi_propagacion: Kpi[] = [
   { id: "ph", label: "pH", value: ultimo_punto_propagacion.ph, unit: "", icon: "Droplets", lc: "LC: 4.4 - 5.2", status: "marginal", spark: [] },
   { id: "presion", label: "Presión del Tanque", value: 0, unit: "bar", icon: "ArrowDownToLine", lc: "N/A", status: "ok", spark: [] },
   { id: "purga", label: "Purga de Trub", value: 0, unit: "", icon: "Trash2", lc: "N/A", status: "ok", spark: [] },
+  { id: "atemperacion", label: "Atemperación", value: 0, unit: "h", icon: "Clock", lc: "N/A", status: "ok", spark: [] },
 ]
 
 export const datos_dispersion_propagacion = datos_propagacion_simulados.map((punto_actual, indice_paso) => {

@@ -149,23 +149,22 @@ export function ordenar_tanques_por_completitud(datos_agrupados: any[], marca_se
 export function preparar_serie_comparativa_volatil(nombre_volatil: string, datos_tanque_a: any[], mapa_datos_tanques_b: Array<{ name: string; data: any[] }>) {
   const volatil_norm = nombre_volatil.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
   const norm_vol = (serie: any) => (serie.volatil || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
-  let max_ferm = 6, cero_ferm = false, cero_rep = false
-  const max_rep = 12
+  const max_ferm = 6, max_rep = 12
+  let cero_ferm = false
 
   ;[...datos_tanque_a, ...mapa_datos_tanques_b.flatMap((info_b) => info_b.data)].forEach((item_serie) => {
     const etapa = (item_serie.etapa || "").toString().toUpperCase()
     Object.keys(item_serie.vueltas || {}).forEach((clave_dia) => {
       const num_dia = parseInt(clave_dia, 10)
-      if (!isNaN(num_dia)) {
-        if (etapa.includes("FERM")) { if (num_dia > max_ferm) max_ferm = num_dia; if (num_dia === 0) cero_ferm = true }
-        if (etapa.includes("REP") && num_dia === 0) cero_rep = true
+      if (!isNaN(num_dia) && etapa.includes("FERM") && num_dia === 0) {
+        cero_ferm = true
       }
     })
   })
 
   const puntos_eje: Array<{ label: string; day: number; isFerm: boolean }> = []
   for (let dia_f = cero_ferm ? 0 : 1; dia_f <= max_ferm; dia_f++) puntos_eje.push({ label: `F${dia_f}`, day: dia_f, isFerm: true })
-  for (let dia_r = cero_rep ? 0 : 1; dia_r <= max_rep; dia_r++) puntos_eje.push({ label: `R${dia_r}`, day: dia_r, isFerm: false })
+  for (let dia_r = 1; dia_r <= max_rep; dia_r++) puntos_eje.push({ label: `R${dia_r}`, day: dia_r, isFerm: false })
 
   const evaluar_serie = (arreglo_series: any[]) => {
     let ultimo_valor: number | null = null, max_dia_rep = -1

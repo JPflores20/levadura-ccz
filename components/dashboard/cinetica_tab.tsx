@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * @fileoverview Pestaña de Cinéticas de Fermentación y Reposo.
- * Delega la extracción de propiedades, KPIs de inicio, tabla de compuestos y evolución a `servicio_cinetica_fermentacion`.
+ * @fileoverview Pestaña de Resumen de Cinética de Fermentación y Reposo.
+ * Delega la extracción de propiedades, KPIs de arranque, tabla resumen y evolución a `servicio_cinetica_fermentacion`.
  */
 
 import React, { useState } from "react"
@@ -11,9 +11,8 @@ import { KpiCard } from "@/components/dashboard/kpi_card"
 import { CheckboxFilter } from "@/components/dashboard/checkbox_filter"
 import { CalendarFilter } from "@/components/dashboard/calendar_filter"
 import { FilterStatusBar } from "@/components/dashboard/filter_status_bar"
-import { ExcelProcessorKinetics } from "@/components/dashboard/kinetics/excel_processor_kinetics"
 import { KineticsEvolutionCharts } from "@/components/dashboard/kinetics/kinetics_evolution_charts"
-import { formatear_fecha_excel } from "@/lib/utils"
+import { formatear_fecha_excel, comparar_generaciones_cultivo } from "@/lib/utils"
 import {
   RUTAS_API_PANEL,
   CONFIGURACION_SWR_PANEL,
@@ -27,9 +26,9 @@ import {
 } from "@/lib/services/servicio_cinetica_fermentacion"
 
 /**
- * Renderiza la pestaña completa de Cinéticas (Inicio de Fermentación, Capacidad y Evolución Cinética).
+ * Renderiza la pestaña completa de Resumen de Cinética (Arranque de Fermentación, Resumen de Cinética y Evolución Cinética).
  *
- * @returns {JSX.Element} Vista de Cinéticas de Fermentación.
+ * @returns {JSX.Element} Vista de Resumen de Cinética.
  */
 export function CineticaTab() {
   const { data: datos_base_remotos, isLoading: esta_cargando_remotos } = useSWR(
@@ -37,7 +36,11 @@ export function CineticaTab() {
     obtener_datos_json_api,
     CONFIGURACION_SWR_PANEL
   )
-  const registros_crudos = datos_base_remotos?.rawData || []
+  const registros_crudos = (datos_base_remotos?.rawData || []).filter((fila: any) => {
+    const texto_etapa = obtener_propiedad_cinetica(fila, ["Etapa"])?.toString().trim().toUpperCase() || ""
+    const texto_tanque = obtener_propiedad_cinetica(fila, ["Tanque", "TCC", "Lote"])?.toString().trim().toUpperCase() || ""
+    return !texto_etapa.includes("PROMEDIO") && !texto_tanque.includes("PROMEDIO")
+  })
 
   const [filtro_generacion, establecer_filtro_generacion] = useState<string[]>([])
   const [abierto_generacion, establecer_abierto_generacion] = useState(false)
@@ -45,8 +48,6 @@ export function CineticaTab() {
   const [abierto_vuelta, establecer_abierto_vuelta] = useState(false)
   const [filtro_fechas, establecer_filtro_fechas] = useState<string[]>([])
   const [abierto_fechas, establecer_abierto_fechas] = useState(false)
-  const [filtro_etapa, establecer_filtro_etapa] = useState<string[]>([])
-  const [abierto_etapa, establecer_abierto_etapa] = useState(false)
   const [filtro_dias, establecer_filtro_dias] = useState<string[]>([])
   const [abierto_dias, establecer_abierto_dias] = useState(false)
   const [filtro_tanques, establecer_filtro_tanques] = useState<string[]>([])
@@ -64,10 +65,9 @@ export function CineticaTab() {
       )
     ).filter(Boolean) as string[]
 
-  const generaciones_unicas = extraer_opciones_unicas(registros_crudos, ["Generacion", "Generación", "Gen", "Gen.", "GeneracionLevadura"]).sort((gen_a, gen_b) => Number(gen_a) - Number(gen_b))
+  const generaciones_unicas = extraer_opciones_unicas(registros_crudos, ["Generacion", "Generación", "Gen", "Gen.", "GeneracionLevadura"]).sort(comparar_generaciones_cultivo)
   const vueltas_unicas = extraer_opciones_unicas(registros_crudos, ["Vuelta", "Vueltas", "Vta", "Vta."]).sort((vta_a, vta_b) => Number(vta_a) - Number(vta_b))
   const fechas_unicas = Array.from(new Set(registros_crudos.map((fila: any) => formatear_fecha_excel(obtener_propiedad_cinetica(fila, ["Fecha"]))))).filter((fecha_str: any) => fecha_str && fecha_str !== "N/A") as string[]
-  const etapas_unicas = extraer_opciones_unicas(registros_crudos, ["Etapa"])
   const dias_unicos = extraer_opciones_unicas(registros_crudos, ["Dias", "Días"]).sort((dia_a, dia_b) => Number(dia_a) - Number(dia_b))
   const marcas_unicas = extraer_opciones_unicas(registros_crudos, ["Marca", "Cepa"], true).sort()
 
@@ -78,13 +78,12 @@ export function CineticaTab() {
 
   const tiene_algun_filtro =
     filtro_generacion.length > 0 || filtro_vuelta.length > 0 || filtro_fechas.length > 0 ||
-    filtro_etapa.length > 0 || filtro_dias.length > 0 || filtro_tanques.length > 0 || filtro_marca.length > 0
+    filtro_dias.length > 0 || filtro_tanques.length > 0 || filtro_marca.length > 0
 
   const limpiar_todos_los_filtros = (): void => {
     establecer_filtro_generacion([])
     establecer_filtro_vuelta([])
     establecer_filtro_fechas([])
-    establecer_filtro_etapa([])
     establecer_filtro_dias([])
     establecer_filtro_tanques([])
     establecer_filtro_marca([])
@@ -96,7 +95,6 @@ export function CineticaTab() {
         const gen_fila = obtener_propiedad_cinetica(fila, ["Generacion", "Generación", "Gen", "Gen.", "GeneracionLevadura"])?.toString().trim()
         const vuelta_fila = obtener_propiedad_cinetica(fila, ["Vuelta", "Vueltas", "Vta", "Vta."])?.toString().trim()
         const fecha_fila = formatear_fecha_excel(obtener_propiedad_cinetica(fila, ["Fecha"]))
-        const etapa_fila = obtener_propiedad_cinetica(fila, ["Etapa"])?.toString().trim()
         const dias_fila = obtener_propiedad_cinetica(fila, ["Dias", "Días"])?.toString().trim()
         const tanque_fila = obtener_propiedad_cinetica(fila, ["Tanque", "TCC", "Lote"])?.toString().trim().toUpperCase()
         const marca_fila = obtener_propiedad_cinetica(fila, ["Marca", "Cepa"])?.toString().trim().toUpperCase()
@@ -104,7 +102,6 @@ export function CineticaTab() {
         if (filtro_generacion.length > 0 && !filtro_generacion.includes(gen_fila)) return false
         if (filtro_vuelta.length > 0 && !filtro_vuelta.includes(vuelta_fila)) return false
         if (filtro_fechas.length > 0 && !filtro_fechas.includes(fecha_fila)) return false
-        if (filtro_etapa.length > 0 && !filtro_etapa.includes(etapa_fila)) return false
         if (filtro_dias.length > 0 && !filtro_dias.includes(dias_fila)) return false
         if (filtro_tanques.length > 0 && !filtro_tanques.includes(tanque_fila)) return false
         if (filtro_marca.length > 0 && !filtro_marca.includes(marca_fila)) return false
@@ -123,19 +120,16 @@ export function CineticaTab() {
           <CheckboxFilter label="Vuelta" options={vueltas_unicas} selectedOptions={filtro_vuelta} onChange={establecer_filtro_vuelta} isOpen={abierto_vuelta} setIsOpen={establecer_abierto_vuelta} />
           <CheckboxFilter label="Marca" options={marcas_unicas} selectedOptions={filtro_marca} onChange={establecer_filtro_marca} isOpen={abierto_marca} setIsOpen={establecer_abierto_marca} />
           <CheckboxFilter label="Tanque" options={tanques_unicos} selectedOptions={filtro_tanques} onChange={establecer_filtro_tanques} isOpen={abierto_tanques} setIsOpen={establecer_abierto_tanques} />
-          <CheckboxFilter label="Etapa" options={etapas_unicas} selectedOptions={filtro_etapa} onChange={establecer_filtro_etapa} isOpen={abierto_etapa} setIsOpen={establecer_abierto_etapa} />
           <CheckboxFilter label="Días" options={dias_unicos} selectedOptions={filtro_dias} onChange={establecer_filtro_dias} isOpen={abierto_dias} setIsOpen={establecer_abierto_dias} />
           <CalendarFilter label="Fecha" options={fechas_unicas} selectedOptions={filtro_fechas} onChange={establecer_filtro_fechas} isOpen={abierto_fechas} setIsOpen={establecer_abierto_fechas} />
         </div>
-        <FilterStatusBar registros_filtrados={filas_filtradas.length} registros_totales={registros_crudos.length} tiene_filtros_activos={tiene_algun_filtro} al_limpiar_filtros={limpiar_todos_los_filtros} esta_cargando={esta_cargando_remotos}>
-          <ExcelProcessorKinetics />
-        </FilterStatusBar>
+        <FilterStatusBar registros_filtrados={filas_filtradas.length} registros_totales={registros_crudos.length} tiene_filtros_activos={tiene_algun_filtro} al_limpiar_filtros={limpiar_todos_los_filtros} esta_cargando={esta_cargando_remotos} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-6 flex flex-col gap-3">
           <div className="border-b border-yellow-500/30 pb-2 mb-2">
-            <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Inicio de Fermentación</h3>
+            <h3 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Arranque de Fermentación</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 h-fit">
             {tarjetas_kpi_inicio.map((indicador_kpi, indice_kpi) => (
@@ -146,28 +140,30 @@ export function CineticaTab() {
 
         <div className="lg:col-span-6 flex flex-col gap-3">
           <div className="border-b border-blue-500/30 pb-2 mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Capacidad de Proceso de la Fermentación</h3>
+            <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Resumen de Cinética</h3>
           </div>
           <div className="bg-[#121212] border border-zinc-800 rounded-lg shadow-lg text-sm overflow-hidden flex flex-col">
-            <div className="overflow-y-auto max-h-[240px] custom-scrollbar">
+            <div className="overflow-y-auto max-h-[260px] custom-scrollbar">
               <table className="w-full text-left relative">
                 <thead className="bg-[#1a1a1a] border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-400 sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Parámetro</th>
-                    <th className="px-4 py-3 font-semibold text-right">Mínimo</th>
-                    <th className="px-4 py-3 font-semibold text-right">Promedio</th>
-                    <th className="px-4 py-3 font-semibold text-right">Máximo</th>
-                    <th className="px-4 py-3 font-semibold text-right text-yellow-500">Valor Final</th>
+                    <th className="px-3 py-3 font-semibold">Parámetro</th>
+                    <th className="px-3 py-3 font-semibold text-right">F1 (24h)</th>
+                    <th className="px-3 py-3 font-semibold text-right">F3 (72h)</th>
+                    <th className="px-3 py-3 font-semibold text-right">F6 (Término)</th>
+                    <th className="px-3 py-3 font-semibold text-right text-blue-400">R6 / R8</th>
+                    <th className="px-3 py-3 font-semibold text-right text-yellow-500">Valor Final</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
                   {filas_tabla_compuestos.map((fila_compuesto, indice_fila) => (
                     <tr key={indice_fila} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="px-4 py-2.5 font-medium text-zinc-200">{fila_compuesto.name}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{fila_compuesto.min}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-blue-400 font-bold">{fila_compuesto.avg}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-zinc-400">{fila_compuesto.max}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-yellow-400 font-bold bg-yellow-500/5">{fila_compuesto.last}</td>
+                      <td className="px-3 py-2.5 font-medium text-zinc-200">{fila_compuesto.name}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-zinc-400">{fila_compuesto.f1}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-zinc-300">{fila_compuesto.f3}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-zinc-200 font-semibold">{fila_compuesto.f6}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-blue-400 font-bold">{fila_compuesto.r6_r8}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-yellow-400 font-bold bg-yellow-500/5">{fila_compuesto.last}</td>
                     </tr>
                   ))}
                 </tbody>

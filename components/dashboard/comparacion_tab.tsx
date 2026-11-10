@@ -13,6 +13,7 @@ import { CheckboxFilter } from "@/components/dashboard/checkbox_filter"
 import { CalendarFilter } from "@/components/dashboard/calendar_filter"
 import { FilterStatusBar } from "@/components/dashboard/filter_status_bar"
 import { CustomDropdownSelect } from "@/components/dashboard/custom_dropdown_select"
+import { comparar_generaciones_cultivo } from "@/lib/utils"
 import {
   RUTAS_API_PANEL,
   CONFIGURACION_SWR_PANEL,
@@ -43,13 +44,6 @@ export function ComparacionTab() {
   const es_opcion_valida = (valor_texto: string) =>
     Boolean(valor_texto && valor_texto !== "N/A" && valor_texto !== "UNDEFINED")
 
-  const generaciones_unicas = Array.from(new Set(registros_normalizados.map((registro: any) => registro.generacionVal))).filter(es_opcion_valida) as string[]
-  generaciones_unicas.sort((gen_a, gen_b) => Number(gen_a) - Number(gen_b))
-  const tipos_unicos = (Array.from(new Set(registros_normalizados.map((registro: any) => registro.tipoLevVal))).filter((tipo) => es_opcion_valida(tipo) && tipo !== "GENERAL") as string[]).sort()
-  const dobleteos_unicos = (Array.from(new Set(registros_normalizados.map((registro: any) => registro.dobleteoVal))).filter(es_opcion_valida) as string[]).sort()
-  const tanques_unicos = (Array.from(new Set(registros_normalizados.map((registro: any) => registro.tanqueVal))).filter(es_opcion_valida) as string[]).sort()
-  const fechas_unicas = Array.from(new Set(registros_normalizados.map((registro: any) => registro.fechaFormateada))).filter(es_opcion_valida) as string[]
-
   const [filtro_generacion, establecer_filtro_generacion] = useState<string[]>([])
   const [abierto_generacion, establecer_abierto_generacion] = useState(false)
   const [filtro_tipo, establecer_filtro_tipo] = useState<string[]>([])
@@ -60,6 +54,28 @@ export function ComparacionTab() {
   const [abierto_tanque, establecer_abierto_tanque] = useState(false)
   const [filtro_fecha, establecer_filtro_fecha] = useState<string[]>([])
   const [abierto_fecha, establecer_abierto_fecha] = useState(false)
+
+  const tipos_unicos = (Array.from(new Set(registros_normalizados.map((registro: any) => registro.tipoLevVal))).filter((tipo) => es_opcion_valida(tipo) && tipo !== "GENERAL") as string[]).sort()
+  const base_por_tipo = filtro_tipo.length > 0
+    ? registros_normalizados.filter((registro: any) => filtro_tipo.includes(registro.tipoLevVal))
+    : registros_normalizados
+  const generaciones_unicas = Array.from(new Set(base_por_tipo.map((registro: any) => registro.generacionVal))).filter(es_opcion_valida) as string[]
+  generaciones_unicas.sort(comparar_generaciones_cultivo)
+  const dobleteos_unicos = (Array.from(new Set(base_por_tipo.map((registro: any) => registro.dobleteoVal))).filter(es_opcion_valida) as string[]).sort()
+  const tanques_unicos = (Array.from(new Set(base_por_tipo.map((registro: any) => registro.tanqueVal))).filter(es_opcion_valida) as string[]).sort()
+  const fechas_unicas = Array.from(new Set(base_por_tipo.map((registro: any) => registro.fechaFormateada))).filter(es_opcion_valida) as string[]
+
+  const actualizar_filtro_tipo = (nuevos_tipos: string[]): void => {
+    establecer_filtro_tipo(nuevos_tipos)
+    if (nuevos_tipos.length > 0 && filtro_generacion.length > 0) {
+      const gens_validas = new Set(
+        registros_normalizados
+          .filter((registro: any) => nuevos_tipos.includes(registro.tipoLevVal))
+          .map((registro: any) => registro.generacionVal)
+      )
+      establecer_filtro_generacion((previas) => previas.filter((gen_activa) => gens_validas.has(gen_activa)))
+    }
+  }
 
   const tiene_filtros_activos =
     filtro_generacion.length > 0 || filtro_tipo.length > 0 || filtro_dobleteo.length > 0 ||
@@ -132,8 +148,8 @@ export function ComparacionTab() {
       <div className="flex flex-col gap-3 bg-[#121212] border border-yellow-500/20 p-3 rounded-md shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3">
           <div className="flex flex-wrap items-center gap-3">
+            <CheckboxFilter label="Tipo de Levadura" options={tipos_unicos} selectedOptions={filtro_tipo} onChange={actualizar_filtro_tipo} isOpen={abierto_tipo} setIsOpen={establecer_abierto_tipo} />
             <CheckboxFilter label="Gen." options={generaciones_unicas} selectedOptions={filtro_generacion} onChange={establecer_filtro_generacion} isOpen={abierto_generacion} setIsOpen={establecer_abierto_generacion} />
-            <CheckboxFilter label="Tipo de Levadura" options={tipos_unicos} selectedOptions={filtro_tipo} onChange={establecer_filtro_tipo} isOpen={abierto_tipo} setIsOpen={establecer_abierto_tipo} />
             <CheckboxFilter label="Dobleteo" options={dobleteos_unicos} selectedOptions={filtro_dobleteo} onChange={establecer_filtro_dobleteo} isOpen={abierto_dobleteo} setIsOpen={establecer_abierto_dobleteo} />
             <CheckboxFilter label="Tanque" options={tanques_unicos} selectedOptions={filtro_tanque} onChange={establecer_filtro_tanque} isOpen={abierto_tanque} setIsOpen={establecer_abierto_tanque} />
             <CalendarFilter label="Fecha" options={fechas_unicas} selectedOptions={filtro_fecha} onChange={establecer_filtro_fecha} isOpen={abierto_fecha} setIsOpen={establecer_abierto_fecha} />
