@@ -72,11 +72,54 @@ export function PropagationTab() {
 
   const actualizar_filtro_tipos = (nuevos_tipos: string[]): void => {
     establecer_filtro_tipos_levadura(nuevos_tipos)
-    if (nuevos_tipos.length > 0 && filtro_generaciones.length > 0) {
+    if (nuevos_tipos.length > 0) {
       const opciones_nuevo_tipo = extraer_opciones_filtro_propagacion(registros_normalizados, nuevos_tipos)
-      establecer_filtro_generaciones((previas) =>
-        previas.filter((gen_activa) => opciones_nuevo_tipo.generaciones_unicas.includes(gen_activa))
+      if (filtro_generaciones.length > 0) {
+        establecer_filtro_generaciones((previas) =>
+          previas.filter((gen_activa) => opciones_nuevo_tipo.generaciones_unicas.includes(gen_activa))
+        )
+      }
+      if (filtro_dobleteos.length > 0) {
+        establecer_filtro_dobleteos((previas) =>
+          previas.filter((dob_activa) => opciones_nuevo_tipo.dobleteos_unicos.includes(dob_activa))
+        )
+      }
+      if (filtro_tanques.length > 0) {
+        establecer_filtro_tanques((previas) =>
+          previas.filter((tanq_activa) => opciones_nuevo_tipo.tanques_unicos.includes(tanq_activa))
+        )
+      }
+      if (filtro_fechas.length > 0) {
+        establecer_filtro_fechas((previas) =>
+          previas.filter((fec_activa) => opciones_nuevo_tipo.fechas_unicas.includes(fec_activa))
+        )
+      }
+    }
+  }
+
+  const actualizar_filtro_generaciones = (nuevas_generaciones: string[]): void => {
+    establecer_filtro_generaciones(nuevas_generaciones)
+    if (nuevas_generaciones.length > 0) {
+      const opciones_nueva_gen = extraer_opciones_filtro_propagacion(
+        registros_normalizados,
+        filtro_tipos_levadura,
+        nuevas_generaciones
       )
+      if (filtro_dobleteos.length > 0) {
+        establecer_filtro_dobleteos((previas) =>
+          previas.filter((dob_activa) => opciones_nueva_gen.dobleteos_unicos.includes(dob_activa))
+        )
+      }
+      if (filtro_tanques.length > 0) {
+        establecer_filtro_tanques((previas) =>
+          previas.filter((tanq_activa) => opciones_nueva_gen.tanques_unicos.includes(tanq_activa))
+        )
+      }
+      if (filtro_fechas.length > 0) {
+        establecer_filtro_fechas((previas) =>
+          previas.filter((fec_activa) => opciones_nueva_gen.fechas_unicas.includes(fec_activa))
+        )
+      }
     }
   }
 
@@ -111,7 +154,7 @@ export function PropagationTab() {
       <div className="flex flex-col xl:flex-row justify-between xl:items-center bg-[#121212] border border-yellow-500/20 rounded-md p-3 gap-4 relative">
         <div className="flex flex-wrap items-center gap-2">
           <CheckboxFilter label="Tipo de Levadura" options={opciones_filtros.tipos_unicos} selectedOptions={filtro_tipos_levadura} onChange={actualizar_filtro_tipos} isOpen={abierto_tipos_levadura} setIsOpen={establecer_abierto_tipos_levadura} />
-          <CheckboxFilter label="Gen." options={opciones_filtros.generaciones_unicas} selectedOptions={filtro_generaciones} onChange={establecer_filtro_generaciones} isOpen={abierto_generacion} setIsOpen={establecer_abierto_generacion} />
+          <CheckboxFilter label="Gen." options={opciones_filtros.generaciones_unicas} selectedOptions={filtro_generaciones} onChange={actualizar_filtro_generaciones} isOpen={abierto_generacion} setIsOpen={establecer_abierto_generacion} />
           <CheckboxFilter label="Dobleteo" options={opciones_filtros.dobleteos_unicos} selectedOptions={filtro_dobleteos} onChange={establecer_filtro_dobleteos} isOpen={abierto_dobleteo} setIsOpen={establecer_abierto_dobleteo} />
           <CheckboxFilter label="Tanque" options={opciones_filtros.tanques_unicos} selectedOptions={filtro_tanques} onChange={establecer_filtro_tanques} isOpen={abierto_tanques} setIsOpen={establecer_abierto_tanques} />
           <CalendarFilter label="Fecha" options={opciones_filtros.fechas_unicas} selectedOptions={filtro_fechas} onChange={establecer_filtro_fechas} isOpen={abierto_fechas} setIsOpen={establecer_abierto_fechas} />

@@ -77,7 +77,7 @@ export function ViabilityChart({ dynamicData: datos_dinamicos }: PropiedadesGraf
                 name="Viabilidad %"
                 stroke="#22c55e"
                 strokeWidth={2}
-                dot={false}
+                dot={{ fill: "#22c55e", strokeWidth: 0, r: 2.5 }}
                 connectNulls
                 isAnimationActive={false}
               />
@@ -87,7 +87,7 @@ export function ViabilityChart({ dynamicData: datos_dinamicos }: PropiedadesGraf
                 name="Vitalidad %"
                 stroke="#eab308"
                 strokeWidth={2}
-                dot={false}
+                dot={{ fill: "#eab308", strokeWidth: 0, r: 2.5 }}
                 connectNulls
                 isAnimationActive={false}
               />
